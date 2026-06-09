@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>摆动波实验讲义（打印版）</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family:"PingFang SC","Microsoft YaHei","Songti SC",serif; color:#1a1a1a;
+         line-height:1.65; font-size:13px; max-width:760px; margin:0 auto; padding:16px; }
+  h1 { font-size:22px; border-bottom:3px solid #1b4965; padding-bottom:8px; margin-bottom:4px; }
+  h2 { font-size:16px; color:#1b4965; margin-top:22px; border-left:5px solid #5fa8d3; padding-left:8px; }
+  .lead { color:#555; font-size:13px; margin-top:6px; }
+  .formula { background:#f1f5f9; border:1px solid #d6e0ea; border-radius:6px;
+             padding:8px 12px; font-family:Consolas,monospace; margin:8px 0; }
+  table { border-collapse:collapse; width:100%; font-size:12px; margin:8px 0; }
+  th,td { border:1px solid #cbd5e1; padding:4px 6px; text-align:right; }
+  th { background:#1b4965; color:#fff; }
+  td:first-child, th:first-child { text-align:center; }
+  ul,ol { margin:6px 0 6px 20px; } li { margin:3px 0; }
+  .fig { text-align:center; margin:12px 0; }
+  .note { background:#fff8e1; border-left:4px solid #f6bd60; padding:6px 10px; font-size:12px; }
+  .footer { margin-top:24px; border-top:1px solid #ccc; padding-top:8px; color:#888; font-size:11px; }
+  @media print { button { display:none; } }
+  button { background:#1b4965; color:#fff; border:none; padding:8px 16px; border-radius:6px;
+           cursor:pointer; font-size:13px; margin:10px 0; }
+</style>
+</head>
+<body>
+<button onclick="window.print()">打印 / 导出 PDF</button>
+
+<h1>摆动波实验讲义 · Pendulum Wave</h1>
+<p class="lead">视觉震撼、原理纯粹的高中物理演示。关键词：单摆周期、相位差、行波、再同步。</p>
+
+<div class="fig">
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 60 820 320" font-family="sans-serif">
+  <rect x="70" y="55" width="680" height="14" rx="4" fill="#778da9"/>
+  <g stroke="#9aa6b2" stroke-width="1.2">
+    <line x1="90" y1="62" x2="90" y2="210"/><line x1="135" y1="62" x2="155" y2="221"/>
+    <line x1="180" y1="62" x2="214" y2="232"/><line x1="225" y1="62" x2="263" y2="243"/>
+    <line x1="270" y1="62" x2="301" y2="254"/><line x1="315" y1="62" x2="330" y2="265"/>
+    <line x1="360" y1="62" x2="354" y2="276"/><line x1="405" y1="62" x2="381" y2="287"/>
+    <line x1="450" y1="62" x2="414" y2="298"/><line x1="495" y1="62" x2="458" y2="309"/>
+    <line x1="540" y1="62" x2="513" y2="320"/><line x1="585" y1="62" x2="579" y2="331"/>
+    <line x1="630" y1="62" x2="642" y2="342"/><line x1="675" y1="62" x2="704" y2="353"/>
+    <line x1="720" y1="62" x2="757" y2="364"/>
+  </g>
+  <g stroke="#333" stroke-width="0.6">
+    <circle cx="90" cy="210" r="10" fill="hsl(0,75%,55%)"/><circle cx="155" cy="221" r="10" fill="hsl(24,75%,55%)"/>
+    <circle cx="214" cy="232" r="10" fill="hsl(48,72%,52%)"/><circle cx="263" cy="243" r="10" fill="hsl(80,60%,48%)"/>
+    <circle cx="301" cy="254" r="10" fill="hsl(120,55%,46%)"/><circle cx="330" cy="265" r="10" fill="hsl(160,58%,46%)"/>
+    <circle cx="354" cy="276" r="10" fill="hsl(185,62%,48%)"/><circle cx="381" cy="287" r="10" fill="hsl(205,68%,52%)"/>
+    <circle cx="414" cy="298" r="10" fill="hsl(220,70%,55%)"/><circle cx="458" cy="309" r="10" fill="hsl(238,62%,58%)"/>
+    <circle cx="513" cy="320" r="10" fill="hsl(258,58%,60%)"/><circle cx="579" cy="331" r="10" fill="hsl(280,58%,58%)"/>
+    <circle cx="642" cy="342" r="10" fill="hsl(300,58%,56%)"/><circle cx="704" cy="353" r="10" fill="hsl(322,64%,56%)"/>
+    <circle cx="757" cy="364" r="10" fill="hsl(340,70%,56%)"/>
+  </g>
+</svg>
+<div style="font-size:11px;color:#777;">长度渐变的一排单摆，同时释放后某一瞬间连成的"行波"</div>
+</div>
+
+<h2>一、实验原理</h2>
+<div class="formula">T = 2&pi;&radic;(L/g)　　&rarr;　　L = g &middot; (T / 2&pi;)&sup2;</div>
+<p>设总循环时间 T_cycle（如 60 s），最长摆完成 base 次振动，其后每摆多 1 次：</p>
+<div class="formula">N&#8342; = base + (k&minus;1)　；　T&#8342; = T_cycle / N&#8342;　；　L&#8342; = g &middot; (T&#8342; / 2&pi;)&sup2;</div>
+<p>各摆相位逐渐错开形成行波，经过 T_cycle 后整数次振动完成，重新排成直线。</p>
+
+<h2>二、器材清单</h2>
+<ul>
+  <li>横杆约 70 cm（刚性好）+ 两个支架，离桌面 ≥ 40 cm</li>
+  <li>15 个质量一致的小球（钢珠 / 大螺母）</li>
+  <li>钓鱼线或细棉线、直尺、剪刀、记号笔</li>
+  <li>释放杆（直尺/平板）、手机（慢动作录像）</li>
+</ul>
+
+<h2>三、参考数据（15 摆，T_cycle=60 s，base=51，g=9.8，球半径 9 mm）</h2>
+<table>
+<tr><th>#</th><th>振动次数/周期</th><th>周期 T(s)</th><th>摆长(cm)</th><th>剪线长(cm)</th></tr>
+<tr><td>1</td><td>51</td><td>1.1765</td><td>34.36</td><td>33.46</td></tr>
+<tr><td>2</td><td>52</td><td>1.1538</td><td>33.05</td><td>32.15</td></tr>
+<tr><td>3</td><td>53</td><td>1.1321</td><td>31.81</td><td>30.91</td></tr>
+<tr><td>4</td><td>54</td><td>1.1111</td><td>30.65</td><td>29.75</td></tr>
+<tr><td>5</td><td>55</td><td>1.0909</td><td>29.54</td><td>28.64</td></tr>
+<tr><td>6</td><td>56</td><td>1.0714</td><td>28.50</td><td>27.60</td></tr>
+<tr><td>7</td><td>57</td><td>1.0526</td><td>27.51</td><td>26.61</td></tr>
+<tr><td>8</td><td>58</td><td>1.0345</td><td>26.57</td><td>25.67</td></tr>
+<tr><td>9</td><td>59</td><td>1.0169</td><td>25.67</td><td>24.77</td></tr>
+<tr><td>10</td><td>60</td><td>1.0000</td><td>24.82</td><td>23.92</td></tr>
+<tr><td>11</td><td>61</td><td>0.9836</td><td>24.02</td><td>23.12</td></tr>
+<tr><td>12</td><td>62</td><td>0.9677</td><td>23.25</td><td>22.35</td></tr>
+<tr><td>13</td><td>63</td><td>0.9524</td><td>22.52</td><td>21.62</td></tr>
+<tr><td>14</td><td>64</td><td>0.9375</td><td>21.82</td><td>20.92</td></tr>
+<tr><td>15</td><td>65</td><td>0.9231</td><td>21.15</td><td>20.25</td></tr>
+</table>
+<p class="note">摆长指悬挂点到小球质心的距离；剪线长 = 摆长 &minus; 小球半径。</p>
+
+<h2>四、操作步骤</h2>
+<ol>
+  <li>按上表剪线、系球、等间距挂到横杆。</li>
+  <li>微调使每摆"悬挂点→质心"距离精确等于摆长值。</li>
+  <li>释放杆从下方托住所有球，对齐到同一水平线、同一角度（&lt;15&deg;）。</li>
+  <li>水平、干脆地平移抽走释放杆，使所有摆同时启动。</li>
+  <li>录像观察：行波 → 多段波 → 散乱 → 约 60 s 再同步。</li>
+</ol>
+
+<h2>五、可探究问题</h2>
+<ul>
+  <li>验证周期公式：数 30 s 内振动次数反推 T，与 2&pi;&radic;(L/g) 对比。</li>
+  <li>测重力加速度：g = 4&pi;&sup2;L / T&sup2;，与 9.8 比较并分析误差。</li>
+  <li>再同步时间是否等于 60 s？讨论空气阻力、线伸长、释放误差。</li>
+</ul>
+
+<h2>六、安全提示</h2>
+<ul>
+  <li>风险极低，注意横杆/支架稳固。</li>
+  <li>效果差多因摆长不准或释放不齐；摆角务必 &lt; 15&deg;。</li>
+</ul>
+
+<div class="footer">caimingye78/physicsexperiment · 配套：web/index.html 实时模拟、scripts/pendulum_lengths.py 计算脚本、docs/lengths.csv 数据表</div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "num": 15,
+    "t_cycle_s": 60.0,
+    "base_oscillations": 51,
+    "gravity": 9.8,
+    "ball_radius_mm": 9.0
+  },
+  "pendulums": [
+    {
+      "index": 1,
+      "oscillations_per_cycle": 51,
+      "period_s": 1.1764705882352942,
+      "length_m": 0.34358048432349836,
+      "length_cm": 34.35804843234983,
+      "string_length_cm": 33.458048432349834
+    },
+    {
+      "index": 2,
+      "oscillations_per_cycle": 52,
+      "period_s": 1.1538461538461537,
+      "length_m": 0.3304929140996372,
+      "length_cm": 33.04929140996372,
+      "string_length_cm": 32.14929140996372
+    },
+    {
+      "index": 3,
+      "oscillations_per_cycle": 53,
+      "period_s": 1.1320754716981132,
+      "length_m": 0.3181391383856958,
+      "length_cm": 31.81391383856958,
+      "string_length_cm": 30.913913838569577
+    },
+    {
+      "index": 4,
+      "oscillations_per_cycle": 54,
+      "period_s": 1.1111111111111112,
+      "length_m": 0.30646530854781184,
+      "length_cm": 30.646530854781183,
+      "string_length_cm": 29.746530854781184
+    },
+    {
+      "index": 5,
+      "oscillations_per_cycle": 55,
+      "period_s": 1.0909090909090908,
+      "length_m": 0.2954224263555104,
+      "length_cm": 29.54224263555104,
+      "string_length_cm": 28.642242635551042
+    },
+    {
+      "index": 6,
+      "oscillations_per_cycle": 56,
+      "period_s": 1.0714285714285714,
+      "length_m": 0.284965828994075,
+      "length_cm": 28.496582899407503,
+      "string_length_cm": 27.5965828994075
+    },
+    {
+      "index": 7,
+      "oscillations_per_cycle": 57,
+      "period_s": 1.0526315789473684,
+      "length_m": 0.27505473675759284,
+      "length_cm": 27.505473675759283,
+      "string_length_cm": 26.605473675759285
+    },
+    {
+      "index": 8,
+      "oscillations_per_cycle": 58,
+      "period_s": 1.0344827586206897,
+      "length_m": 0.26565185485297843,
+      "length_cm": 26.565185485297842,
+      "string_length_cm": 25.665185485297844
+    },
+    {
+      "index": 9,
+      "oscillations_per_cycle": 59,
+      "period_s": 1.0169491525423728,
+      "length_m": 0.25672302204120057,
+      "length_cm": 25.672302204120058,
+      "string_length_cm": 24.772302204120056
+    },
+    {
+      "index": 10,
+      "oscillations_per_cycle": 60,
+      "period_s": 1.0,
+      "length_m": 0.2482368999237276,
+      "length_cm": 24.82368999237276,
+      "string_length_cm": 23.92368999237276
+    },
+    {
+      "index": 11,
+      "oscillations_per_cycle": 61,
+      "period_s": 0.9836065573770492,
+      "length_m": 0.24016469758812667,
+      "length_cm": 24.01646975881267,
+      "string_length_cm": 23.116469758812666
+    },
+    {
+      "index": 12,
+      "oscillations_per_cycle": 62,
+      "period_s": 0.967741935483871,
+      "length_m": 0.23247992708777823,
+      "length_cm": 23.247992708777822,
+      "string_length_cm": 22.347992708777824
+    },
+    {
+      "index": 13,
+      "oscillations_per_cycle": 63,
+      "period_s": 0.9523809523809523,
+      "length_m": 0.22515818587186168,
+      "length_cm": 22.515818587186168,
+      "string_length_cm": 21.615818587186165
+    },
+    {
+      "index": 14,
+      "oscillations_per_cycle": 64,
+      "period_s": 0.9375,
+      "length_m": 0.2181769628235887,
+      "length_cm": 21.81769628235887,
+      "string_length_cm": 20.917696282358868
+    },
+    {
+      "index": 15,
+      "oscillations_per_cycle": 65,
+      "period_s": 0.9230769230769231,
+      "length_m": 0.2115154650237679,
+      "length_cm": 21.15154650237679,
+      "string_length_cm": 20.251546502376787
+    }
+  ]
+}
