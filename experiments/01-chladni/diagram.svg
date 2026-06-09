@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460" font-family="Segoe UI, PingFang SC, sans-serif">
+  <defs>
+    <radialGradient id="plate" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#274b63"/>
+      <stop offset="100%" stop-color="#0d1b2a"/>
+    </radialGradient>
+    <linearGradient id="rod" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9aa6b2"/>
+      <stop offset="100%" stop-color="#4a5663"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="760" height="460" fill="#0d1b2a"/>
+  <text x="30" y="42" fill="#e0e1dd" font-size="24" font-weight="bold">克拉尼图形：振动方板的节线</text>
+  <text x="30" y="68" fill="#9aa6b2" font-size="14">沙粒聚集到位移为零的节线上 — f(x,y)=cos(mπx)cos(nπy) − cos(nπx)cos(mπy)</text>
+
+  <!-- vibrating plate (top view, left) -->
+  <g transform="translate(60,110)">
+    <rect x="0" y="0" width="280" height="280" rx="10" fill="url(#plate)" stroke="#4cc9f0" stroke-width="3"/>
+    <!-- nodal lines for a sample mode -->
+    <g stroke="#e0e1dd" stroke-width="2.4" fill="none" opacity="0.9">
+      <path d="M0,140 C70,90 210,190 280,140"/>
+      <path d="M140,0 C90,70 190,210 140,280"/>
+      <path d="M40,40 C120,120 160,160 240,240" opacity="0.6"/>
+      <path d="M240,40 C160,120 120,160 40,240" opacity="0.6"/>
+    </g>
+    <!-- sand dots along nodes -->
+    <g fill="#fff4e0">
+      <circle cx="70" cy="118" r="2"/><circle cx="110" cy="132" r="2"/><circle cx="150" cy="148" r="2"/>
+      <circle cx="190" cy="160" r="2"/><circle cx="230" cy="150" r="2"/>
+      <circle cx="140" cy="40" r="2"/><circle cx="132" cy="90" r="2"/><circle cx="150" cy="190" r="2"/>
+      <circle cx="148" cy="240" r="2"/><circle cx="60" cy="60" r="2"/><circle cx="220" cy="220" r="2"/>
+    </g>
+    <text x="140" y="305" fill="#9aa6b2" font-size="13" text-anchor="middle">俯视：沙画出节线图案</text>
+  </g>
+
+  <!-- side / drive system (right) -->
+  <g transform="translate(420,110)">
+    <!-- plate edge -->
+    <rect x="0" y="40" width="260" height="12" rx="4" fill="#9aa6b2"/>
+    <text x="130" y="34" fill="#9aa6b2" font-size="13" text-anchor="middle">方板（侧视）</text>
+    <!-- center bolt + rod -->
+    <rect x="123" y="52" width="14" height="120" fill="url(#rod)"/>
+    <circle cx="130" cy="46" r="9" fill="#e0e1dd" stroke="#4cc9f0" stroke-width="2"/>
+    <!-- exciter -->
+    <rect x="95" y="172" width="70" height="50" rx="8" fill="#1b263b" stroke="#4cc9f0" stroke-width="2"/>
+    <text x="130" y="202" fill="#4cc9f0" font-size="12" text-anchor="middle">激励器</text>
+    <!-- signal box -->
+    <rect x="40" y="260" width="180" height="60" rx="8" fill="#1b263b" stroke="#4cc9f0" stroke-width="2"/>
+    <text x="130" y="285" fill="#e0e1dd" font-size="13" text-anchor="middle">信号发生器</text>
+    <text x="130" y="305" fill="#9aa6b2" font-size="12" text-anchor="middle">频率 f ↑ → (m,n) ↑</text>
+    <!-- wires -->
+    <path d="M130,222 L130,260" stroke="#4cc9f0" stroke-width="2" fill="none"/>
+    <!-- vibration arrows -->
+    <g stroke="#4cc9f0" stroke-width="2" fill="none">
+      <path d="M30,46 q-14,0 -14,12"/><path d="M230,46 q14,0 14,12"/>
+    </g>
+    <text x="130" y="360" fill="#9aa6b2" font-size="12" text-anchor="middle">相对频率 ∝ √(m²+n²)</text>
+  </g>
+</svg>

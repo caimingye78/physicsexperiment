@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#4cc9f0"/>
+    </marker>
+    <radialGradient id="src" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9be7ff"/>
+      <stop offset="100%" stop-color="#4cc9f0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="720" height="420" fill="#0d1b2a"/>
+  <text x="360" y="36" fill="#e0e1dd" font-size="22" font-weight="bold" text-anchor="middle">多普勒效应：波前的前密后疏</text>
+
+  <!-- 波前圆心随声源右移而右移，半径越早发射越大 -->
+  <g fill="none" stroke="#5e7799" stroke-width="2">
+    <circle cx="250" cy="220" r="150"/>
+    <circle cx="290" cy="220" r="115"/>
+    <circle cx="330" cy="220" r="82"/>
+    <circle cx="365" cy="220" r="52"/>
+    <circle cx="395" cy="220" r="26"/>
+  </g>
+
+  <!-- 声源 -->
+  <circle cx="415" cy="220" r="11" fill="url(#src)"/>
+  <line x1="415" y1="220" x2="475" y2="220" stroke="#4cc9f0" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="450" y="208" fill="#4cc9f0" font-size="14">vs</text>
+  <text x="415" y="258" fill="#e0e1dd" font-size="13" text-anchor="middle">声源 f</text>
+
+  <!-- 前方观察者 -->
+  <circle cx="620" cy="220" r="9" fill="#ffd166"/>
+  <text x="620" y="200" fill="#ffd166" font-size="13" text-anchor="middle">前方观察者</text>
+  <text x="620" y="248" fill="#ff8e72" font-size="13" text-anchor="middle">f' 变高</text>
+
+  <!-- 后方观察者 -->
+  <circle cx="95" cy="220" r="9" fill="#ffd166"/>
+  <text x="95" y="200" fill="#ffd166" font-size="13" text-anchor="middle">后方观察者</text>
+  <text x="95" y="248" fill="#7ee0ff" font-size="13" text-anchor="middle">f' 变低</text>
+
+  <!-- 说明：波长前疏后密 -->
+  <text x="540" y="300" fill="#9aa6b2" font-size="13" text-anchor="middle">前方波长变短 → 频率升高</text>
+  <text x="180" y="300" fill="#9aa6b2" font-size="13" text-anchor="middle">后方波长变长 → 频率降低</text>
+
+  <!-- 公式框 -->
+  <rect x="160" y="340" width="400" height="56" rx="10" fill="#1b263b" stroke="#2c476a"/>
+  <text x="360" y="365" fill="#e0e1dd" font-size="15" text-anchor="middle">f' = f × (v ± vo) / (v ∓ vs)</text>
+  <text x="360" y="385" fill="#9aa6b2" font-size="12" text-anchor="middle">靠近取减号分母，远离取加号分母；vs &gt; v 时形成马赫锥</text>
+</svg>

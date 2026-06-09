@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1b2a"/>
+      <stop offset="1" stop-color="#102438"/>
+    </linearGradient>
+    <radialGradient id="ballStill" cx="0.35" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#bfeeff"/>
+      <stop offset="1" stop-color="#4cc9f0"/>
+    </radialGradient>
+    <radialGradient id="ballMove" cx="0.35" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="1" stop-color="#ffd166"/>
+    </radialGradient>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#ffd166"/>
+    </marker>
+  </defs>
+
+  <rect width="760" height="460" fill="url(#bg)"/>
+  <text x="30" y="44" fill="#e0e1dd" font-size="24" font-weight="bold">牛顿摆 · 动量与能量守恒</text>
+  <text x="30" y="70" fill="#9aa6b2" font-size="14">抬起 k 个球释放 → 另一端弹出 k 个球</text>
+
+  <!-- 横梁 -->
+  <rect x="180" y="100" width="400" height="16" fill="#2c476a" rx="4"/>
+  <rect x="172" y="92" width="16" height="28" fill="#16314d"/>
+  <rect x="572" y="92" width="16" height="28" fill="#16314d"/>
+
+  <!-- 悬挂点 x 坐标 -->
+  <!-- 五个球，间距 70，最低点 y=340，摆长约 224 -->
+  <!-- 左侧被抬起一个球 -->
+  <g stroke="#9aa6b2" stroke-width="1.4">
+    <line x1="230" y1="116" x2="170" y2="300"/>
+    <line x1="300" y1="116" x2="300" y2="340"/>
+    <line x1="370" y1="116" x2="370" y2="340"/>
+    <line x1="440" y1="116" x2="440" y2="340"/>
+    <line x1="510" y1="116" x2="510" y2="340"/>
+  </g>
+
+  <!-- 抬起的球（运动中，黄） -->
+  <circle cx="170" cy="300" r="24" fill="url(#ballMove)"/>
+  <!-- 速度箭头 -->
+  <line x1="190" y1="318" x2="225" y2="338" stroke="#ffd166" stroke-width="3" marker-end="url(#arr)"/>
+  <text x="120" y="285" fill="#ffd166" font-size="13">抬起角 θ</text>
+
+  <!-- 中间静止球（蓝） -->
+  <circle cx="300" cy="340" r="24" fill="url(#ballStill)"/>
+  <circle cx="370" cy="340" r="24" fill="url(#ballStill)"/>
+  <circle cx="440" cy="340" r="24" fill="url(#ballStill)"/>
+
+  <!-- 右端将弹出的球（虚线示意） -->
+  <circle cx="510" cy="340" r="24" fill="url(#ballStill)"/>
+  <circle cx="570" cy="300" r="24" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="510" y1="116" x2="570" y2="300" stroke="#9aa6b2" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="540" y="285" fill="#9aa6b2" font-size="12">即将弹出</text>
+
+  <!-- 角度弧 -->
+  <path d="M300,200 A 184 184 0 0 0 230 232" fill="none" stroke="#4cc9f0" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+  <!-- 公式区 -->
+  <rect x="60" y="380" width="640" height="60" fill="#1b263b" rx="8"/>
+  <text x="80" y="406" fill="#4cc9f0" font-size="15">动量守恒：Σ m·v = 常数</text>
+  <text x="340" y="406" fill="#ffd166" font-size="15">动能守恒：Σ (1/2) m·v² = 常数</text>
+  <text x="80" y="428" fill="#9aa6b2" font-size="13">等质量弹性正碰 → 交换速度；只有"弹出 k 个、同速度"才能同时满足两条守恒定律</text>
+</svg>
