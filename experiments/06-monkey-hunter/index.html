@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猎人射猴 · 抛体运动</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .layout{display:flex;gap:18px;flex-wrap:wrap;}
+  .stage{flex:1 1 520px;min-width:340px;}
+  .side{flex:0 0 320px;min-width:280px;}
+  .panel{background:var(--panel);border:1px solid #2a3a52;border-radius:12px;
+    padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  canvas{display:block;width:100%;border-radius:12px;background:#05101c;
+    border:1px solid #2a3a52;}
+  .row{margin:12px 0;}
+  .row label{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--muted);margin-bottom:6px;}
+  .row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#274b63);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  button{background:#274b63;color:var(--ink);border:1px solid var(--accent);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accent);color:#05101c;}
+  button.active{background:var(--accent);color:#05101c;}
+  .formula{background:#05101c;border:1px dashed var(--accent);border-radius:10px;
+    padding:12px;font-size:13px;line-height:1.7;color:var(--ink);}
+  .formula code{color:var(--accent);}
+  .stat{font-size:13px;color:var(--muted);line-height:1.8;}
+  .stat b{color:var(--ink);}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:8px;}
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:bold;}
+  .hit{background:#1f5135;color:#7CFFB0;border:1px solid #2ecc71;}
+  .miss{background:#5a1f1f;color:#ff9a9a;border:1px solid #e74c3c;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>猎人射猴 <span class="en">Monkey and Hunter</span></h1>
+  <p class="intro">猎人瞄准树上的猴子开枪，猴子在枪响瞬间撒手下落——只要飞镖和猴子受同样的重力，飞镖必定命中猴子。</p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="panel">
+        <canvas id="cv" width="760" height="500"></canvas>
+        <div class="hint" id="hint">提示：飞镖始终沿"瞄准猴子"的直线发射。点击「开枪」，看看命中还是错过。</div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="row">
+          <label>发射速度 v / (m/s) <b id="vVal">22</b></label>
+          <input type="range" id="v" min="8" max="40" step="1" value="22">
+        </div>
+        <div class="row">
+          <label>水平距离 d / m <b id="dVal">12</b></label>
+          <input type="range" id="d" min="6" max="20" step="0.5" value="12">
+        </div>
+        <div class="row">
+          <label>猴子离地高度 h / m <b id="hVal">7</b></label>
+          <input type="range" id="h" min="3" max="11" step="0.5" value="7">
+        </div>
+        <div class="row">
+          <label>瞄准角 θ（自动对准猴子） <b id="aVal">30.3°</b></label>
+          <input type="range" id="a" min="0" max="80" step="0.1" value="30" disabled>
+        </div>
+        <div class="btns">
+          <button id="fire">开枪</button>
+          <button id="reset">复位</button>
+          <button id="slow">慢动作</button>
+        </div>
+        <div class="toggle">
+          <label style="cursor:pointer;">
+            <input type="checkbox" id="dropChk" checked> 枪响时猴子撒手下落
+          </label>
+        </div>
+        <div class="hint" id="dropHint">取消勾选 → 猴子赖着不动，飞镖会从它"原来该在的位置"上方飞过。</div>
+      </div>
+
+      <div class="panel">
+        <div class="stat" id="stat"></div>
+        <div id="result" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="formula">
+          飞镖（抛体）：<br>
+          <code>x = v·cosθ·t</code><br>
+          <code>y = v·sinθ·t − 0.5·g·t²</code><br><br>
+          猴子（自由下落）：<br>
+          <code>y_猴 = h − 0.5·g·t²</code><br><br>
+          瞄准角：<code>tanθ = h / d</code><br><br>
+          两者的 <code>−0.5·g·t²</code> 完全相同，<br>
+          所以无论 v 多大，竖直方向"少掉的高度"一样，<br>
+          飞镖总在猴子所在高度相遇 → <b>必中</b>。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+
+  var vEl = document.getElementById("v");
+  var dEl = document.getElementById("d");
+  var hEl = document.getElementById("h");
+  var aEl = document.getElementById("a");
+  var vVal = document.getElementById("vVal");
+  var dVal = document.getElementById("dVal");
+  var hVal = document.getElementById("hVal");
+  var aVal = document.getElementById("aVal");
+  var stat = document.getElementById("stat");
+  var result = document.getElementById("result");
+  var hint = document.getElementById("hint");
+  var dropChk = document.getElementById("dropChk");
+
+  var g = 9.8;
+
+  // world -> screen mapping
+  var groundY = H - 50;       // pixel y of ground
+  var originX = 70;           // pixel x of hunter (launch point), at gun height
+  var gunHeight = 0.6;        // hunter gun a bit above ground (m)
+  var scale = 30;             // pixels per meter (recomputed to fit)
+
+  var state = {
+    v:22, d:12, h:7, theta:0,
+    running:false, slow:false, t:0,
+    monkeyDrops:true,
+    dart:{x:0,y:0},
+    monkeyY:0,
+    trail:[],
+    monkeyTrail:[],
+    impact:null,   // {x,y} when hit
+    finished:false,
+    outcome:""     // "hit" | "miss-above" | "ground"
+  };
+
+  function recomputeScale(){
+    // fit horizontal distance d and height h into canvas with margins
+    var usableW = W - originX - 60;
+    var usableH = groundY - 40;
+    var sx = usableW / Math.max(state.d, 1);
+    var sy = usableH / Math.max(state.h + 1.5, 1);
+    scale = Math.min(sx, sy);
+  }
+
+  // world coords: x right (m), y up (m). launch point at (0, gunHeight)
+  function sx(xm){ return originX + xm*scale; }
+  function sy(ym){ return groundY - ym*scale; }
+
+  function aim(){
+    // aim straight at the monkey: from launch (0,gunHeight) to (d, h)
+    var dx = state.d;
+    var dy = state.h - gunHeight;
+    state.theta = Math.atan2(dy, dx);
+    aVal.textContent = (state.theta*180/Math.PI).toFixed(1)+"\u00B0";
+    aEl.value = (state.theta*180/Math.PI).toFixed(1);
+  }
+
+  function reset(){
+    state.running = false;
+    state.finished = false;
+    state.t = 0;
+    state.trail = [];
+    state.monkeyTrail = [];
+    state.impact = null;
+    state.outcome = "";
+    state.monkeyY = state.h;
+    state.dart.x = 0; state.dart.y = gunHeight;
+    result.innerHTML = "";
+    recomputeScale();
+    updateStat();
+  }
+
+  function readParams(){
+    state.v = +vEl.value;
+    state.d = +dEl.value;
+    state.h = +hEl.value;
+    state.monkeyDrops = dropChk.checked;
+    aim();
+    recomputeScale();
+  }
+
+  function dartPos(t){
+    var x = state.v*Math.cos(state.theta)*t;
+    var y = gunHeight + state.v*Math.sin(state.theta)*t - 0.5*g*t*t;
+    return {x:x, y:y};
+  }
+
+  function monkeyPos(t){
+    var y = state.monkeyDrops ? (state.h - 0.5*g*t*t) : state.h;
+    return {x:state.d, y:y};
+  }
+
+  function step(dt){
+    state.t += dt;
+    var dp = dartPos(state.t);
+    var mp = monkeyPos(state.t);
+    state.dart.x = dp.x; state.dart.y = dp.y;
+    state.monkeyY = mp.y;
+    state.trail.push({x:dp.x, y:dp.y});
+    if (state.monkeyDrops) state.monkeyTrail.push({x:mp.x, y:mp.y});
+
+    // collision: dart reaches monkey's x and close in y
+    var hitR = 0.45; // meters
+    var dist = Math.hypot(dp.x - mp.x, dp.y - mp.y);
+    if (dist < hitR && !state.finished){
+      state.finished = true; state.running = false;
+      state.impact = {x:(dp.x+mp.x)/2, y:(dp.y+mp.y)/2};
+      state.outcome = "hit";
+      showResult();
+      return;
+    }
+    // dart passed the monkey's x-plane
+    if (dp.x >= state.d && !state.finished){
+      state.finished = true; state.running = false;
+      // determine where dart is vs monkey
+      var tCross = state.d / (state.v*Math.cos(state.theta));
+      var dy = dartPos(tCross).y;
+      var my = monkeyPos(tCross).y;
+      state.impact = {x:state.d, y:dy};
+      state.outcome = (dy > my) ? "miss-above" : "ground";
+      showResult();
+      return;
+    }
+    // dart hits ground or monkey hits ground
+    if (dp.y <= 0 && !state.finished){
+      state.finished = true; state.running = false;
+      state.outcome = "ground";
+      showResult();
+      return;
+    }
+  }
+
+  function showResult(){
+    if (state.outcome === "hit"){
+      result.innerHTML = '<span class="badge hit">命中！飞镖正好击中猴子</span>';
+      hint.textContent = "命中：竖直方向两者都掉了 0.5·g·t²，所以在同一高度相遇。";
+    } else if (state.outcome === "miss-above"){
+      result.innerHTML = '<span class="badge miss">未中：飞镖从猴子原位置上方飞过</span>';
+      hint.textContent = "因为猴子没有下落，飞镖按瞄准线飞到时，比静止的猴子更高，所以打偏。";
+    } else {
+      result.innerHTML = '<span class="badge miss">未命中：飞镖落地 / 力度不足</span>';
+      hint.textContent = "发射速度太小，飞镖还没到树下就落地了。试着调大发射速度。";
+    }
+    updateStat();
+  }
+
+  // ---------- drawing ----------
+  function drawTree(x){
+    // trunk
+    ctx.fillStyle = "#5b3a1e";
+    ctx.fillRect(x-8, sy(0)-(groundY-40), 16, (groundY-40));
+    var ty = 40;
+    // canopy
+    ctx.fillStyle = "#2f7d4f";
+    ctx.beginPath();
+    ctx.arc(x, ty+20, 42, 0, Math.PI*2);
+    ctx.arc(x-30, ty+40, 32, 0, Math.PI*2);
+    ctx.arc(x+30, ty+40, 32, 0, Math.PI*2);
+    ctx.fill();
+    // branch where monkey hangs
+    ctx.strokeStyle = "#5b3a1e";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(x, sy(state.h)+6);
+    ctx.lineTo(x-26, sy(state.h)-2);
+    ctx.stroke();
+  }
+
+  function drawMonkey(px, py, dropping){
+    // simple cute monkey
+    ctx.save();
+    ctx.translate(px, py);
+    // body
+    ctx.fillStyle = "#8a5a2b";
+    ctx.beginPath(); ctx.arc(0, 8, 11, 0, Math.PI*2); ctx.fill();
+    // head
+    ctx.beginPath(); ctx.arc(0, -8, 9, 0, Math.PI*2); ctx.fill();
+    // face
+    ctx.fillStyle = "#e2c08d";
+    ctx.beginPath(); ctx.arc(0, -7, 6, 0, Math.PI*2); ctx.fill();
+    // ears
+    ctx.fillStyle = "#8a5a2b";
+    ctx.beginPath(); ctx.arc(-9,-9,4,0,Math.PI*2); ctx.arc(9,-9,4,0,Math.PI*2); ctx.fill();
+    // eyes
+    ctx.fillStyle = "#222";
+    ctx.beginPath(); ctx.arc(-2.5,-8,1.4,0,Math.PI*2); ctx.arc(2.5,-8,1.4,0,Math.PI*2); ctx.fill();
+    // arms: if hanging, up; if dropping, spread
+    ctx.strokeStyle = "#8a5a2b";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (dropping){
+      ctx.moveTo(-8,2); ctx.lineTo(-16,-6);
+      ctx.moveTo(8,2);  ctx.lineTo(16,-6);
+    } else {
+      ctx.moveTo(-6,0); ctx.lineTo(-10,-14);
+      ctx.moveTo(6,0);  ctx.lineTo(10,-14);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawHunter(){
+    var hx = sx(0), hy = sy(gunHeight);
+    // body
+    ctx.fillStyle = "#4a6fa5";
+    ctx.fillRect(hx-26, hy-2, 12, 38);
+    // head
+    ctx.fillStyle = "#e2c08d";
+    ctx.beginPath(); ctx.arc(hx-20, hy-12, 8, 0, Math.PI*2); ctx.fill();
+    // hat
+    ctx.fillStyle = "#2b3a4a";
+    ctx.fillRect(hx-30, hy-20, 20, 4);
+    ctx.fillRect(hx-26, hy-26, 12, 7);
+    // gun barrel along aim direction
+    ctx.strokeStyle = "#cfd6dd";
+    ctx.lineWidth = 4;
+    var L = 34;
+    ctx.beginPath();
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(hx + L*Math.cos(state.theta), hy - L*Math.sin(state.theta));
+    ctx.stroke();
+  }
+
+  function drawAimLine(){
+    ctx.save();
+    ctx.strokeStyle = "rgba(76,201,240,0.35)";
+    ctx.setLineDash([6,6]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx(0), sy(gunHeight));
+    // extend aim line beyond monkey
+    var ex = state.d*1.15;
+    var ey = gunHeight + Math.tan(state.theta)*ex;
+    ctx.lineTo(sx(ex), sy(ey));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // sky gradient
+    var sky = ctx.createLinearGradient(0,0,0,groundY);
+    sky.addColorStop(0,"#0d1b2a");
+    sky.addColorStop(1,"#10243a");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,W,groundY);
+    // ground
+    ctx.fillStyle = "#16341f";
+    ctx.fillRect(0,groundY,W,H-groundY);
+    ctx.strokeStyle = "#274b63";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,groundY); ctx.lineTo(W,groundY); ctx.stroke();
+
+    var treeX = sx(state.d);
+
+    drawAimLine();
+    drawTree(treeX);
+    drawHunter();
+
+    // dart trail
+    if (state.trail.length>1){
+      ctx.strokeStyle = "#4cc9f0";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (var i=0;i<state.trail.length;i++){
+        var p = state.trail[i];
+        if (i===0) ctx.moveTo(sx(p.x), sy(p.y)); else ctx.lineTo(sx(p.x), sy(p.y));
+      }
+      ctx.stroke();
+    }
+    // monkey fall trail
+    if (state.monkeyTrail.length>1){
+      ctx.strokeStyle = "rgba(226,192,141,0.45)";
+      ctx.setLineDash([3,4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (var j=0;j<state.monkeyTrail.length;j++){
+        var mp = state.monkeyTrail[j];
+        if (j===0) ctx.moveTo(sx(mp.x), sy(mp.y)); else ctx.lineTo(sx(mp.x), sy(mp.y));
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // monkey
+    var my = Math.max(state.monkeyY, 0);
+    drawMonkey(treeX, sy(my), state.running && state.monkeyDrops);
+
+    // dart (only if launched and in flight or finished)
+    if (state.t>0){
+      var dpx = sx(state.dart.x), dpy = sy(Math.max(state.dart.y,0));
+      ctx.save();
+      ctx.translate(dpx, dpy);
+      // velocity direction for orientation
+      var vx = state.v*Math.cos(state.theta);
+      var vy = state.v*Math.sin(state.theta) - g*state.t;
+      var ang = Math.atan2(-vy, vx);
+      ctx.rotate(ang);
+      ctx.fillStyle = "#ffd27f";
+      ctx.fillRect(-10,-1.5,20,3);
+      ctx.beginPath();
+      ctx.moveTo(10,0); ctx.lineTo(4,-4); ctx.lineTo(4,4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+
+    // impact burst
+    if (state.impact && state.outcome==="hit"){
+      var ix = sx(state.impact.x), iy = sy(state.impact.y);
+      ctx.strokeStyle = "#ffd27f";
+      ctx.lineWidth = 2;
+      for (var k=0;k<8;k++){
+        var aa = k/8*Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(ix+6*Math.cos(aa), iy+6*Math.sin(aa));
+        ctx.lineTo(ix+16*Math.cos(aa), iy+16*Math.sin(aa));
+        ctx.stroke();
+      }
+    }
+
+    // labels
+    ctx.fillStyle = "#9aa6b2";
+    ctx.font = "12px Segoe UI, sans-serif";
+    ctx.fillText("猎人", sx(0)-30, groundY+18);
+    ctx.fillText("d = "+state.d.toFixed(1)+" m", (sx(0)+treeX)/2-24, groundY+18);
+    ctx.fillText("h = "+state.h.toFixed(1)+" m", treeX+10, sy(state.h/2));
+  }
+
+  function updateStat(){
+    var tCross = state.d/(state.v*Math.cos(state.theta));
+    var dartYatCross = dartPos(tCross).y;
+    var willReach = dartYatCross > 0;
+    stat.innerHTML =
+      "瞄准角 θ = <b>"+(state.theta*180/Math.PI).toFixed(1)+"\u00B0</b>（tanθ = h/d）<br>"+
+      "到达树下用时 t = d/(v·cosθ) ≈ <b>"+tCross.toFixed(2)+" s</b><br>"+
+      "此刻飞镖高度 ≈ <b>"+dartYatCross.toFixed(2)+" m</b><br>"+
+      "此刻猴子高度（下落）≈ <b>"+Math.max(state.h-0.5*g*tCross*tCross,0).toFixed(2)+" m</b><br>"+
+      "竖直方向共同下落量 0.5·g·t² ≈ <b>"+(0.5*g*tCross*tCross).toFixed(2)+" m</b><br>"+
+      (willReach ? "" : "<b style='color:#ff9a9a'>注意：速度偏小，飞镖可能在到达前落地</b>");
+  }
+
+  var lastTime = 0;
+  function loop(ts){
+    if (!lastTime) lastTime = ts;
+    var realDt = (ts-lastTime)/1000; lastTime = ts;
+    if (realDt>0.05) realDt = 0.05;
+    var sc = state.slow ? 0.2 : 1;
+    if (state.running){
+      var dt = 0.001;
+      var total = realDt*sc;
+      var acc = 0;
+      while (acc<total && state.running){
+        step(dt); acc += dt;
+      }
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // events
+  vEl.addEventListener("input", function(){
+    state.v = +vEl.value; vVal.textContent = state.v;
+    if (!state.running){ reset(); }
+  });
+  dEl.addEventListener("input", function(){
+    state.d = +dEl.value; dVal.textContent = state.d.toFixed(1);
+    if (!state.running){ readParams(); reset(); }
+  });
+  hEl.addEventListener("input", function(){
+    state.h = +hEl.value; hVal.textContent = state.h.toFixed(1);
+    if (!state.running){ readParams(); reset(); }
+  });
+  dropChk.addEventListener("change", function(){
+    state.monkeyDrops = dropChk.checked;
+    if (!state.running){ reset(); }
+  });
+  document.getElementById("fire").addEventListener("click", function(){
+    readParams(); reset();
+    state.running = true;
+    hint.textContent = "发射！注意飞镖与猴子竖直方向同步下落。";
+  });
+  document.getElementById("reset").addEventListener("click", function(){
+    readParams(); reset();
+    hint.textContent = "已复位。调整滑块后点击「开枪」。";
+  });
+  var slowBtn = document.getElementById("slow");
+  slowBtn.addEventListener("click", function(){
+    state.slow = !state.slow;
+    slowBtn.textContent = state.slow ? "正常速度" : "慢动作";
+    slowBtn.classList.toggle("active", state.slow);
+  });
+
+  readParams();
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

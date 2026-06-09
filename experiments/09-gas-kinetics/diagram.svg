@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1b2a"/>
+      <stop offset="1" stop-color="#102438"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#4cc9f0"/>
+    </marker>
+  </defs>
+
+  <rect width="760" height="460" fill="url(#bg)"/>
+  <text x="30" y="44" fill="#e0e1dd" font-size="24" font-weight="bold">气体动理论 · 微观模型</text>
+  <text x="30" y="70" fill="#9aa6b2" font-size="14">大量小球弹性碰撞 → 速率趋向麦克斯韦分布 → 撞墙产生压强</text>
+
+  <!-- 气体盒 -->
+  <rect x="40" y="100" width="360" height="300" fill="#08121e" stroke="#2c476a" stroke-width="3" rx="6"/>
+  <text x="50" y="120" fill="#9aa6b2" font-size="13">封闭容器（体积 V）</text>
+
+  <!-- 活塞 -->
+  <rect x="400" y="100" width="14" height="300" fill="#2c476a"/>
+  <rect x="400" y="232" width="14" height="36" fill="#4cc9f0"/>
+  <text x="372" y="420" fill="#4cc9f0" font-size="13">可移动活塞</text>
+
+  <!-- 小球（不同速度颜色） -->
+  <g>
+    <circle cx="110" cy="160" r="9" fill="#4cc9f0"/>
+    <line x1="110" y1="160" x2="150" y2="150" stroke="#4cc9f0" stroke-width="2" marker-end="url(#arr)"/>
+    <circle cx="200" cy="220" r="9" fill="#7fd4ef"/>
+    <line x1="200" y1="220" x2="170" y2="250" stroke="#4cc9f0" stroke-width="2" marker-end="url(#arr)"/>
+    <circle cx="300" cy="180" r="9" fill="#ffb37a"/>
+    <line x1="300" y1="180" x2="350" y2="200" stroke="#4cc9f0" stroke-width="2" marker-end="url(#arr)"/>
+    <circle cx="150" cy="320" r="9" fill="#ffd166"/>
+    <line x1="150" y1="320" x2="120" y2="290" stroke="#4cc9f0" stroke-width="2" marker-end="url(#arr)"/>
+    <circle cx="260" cy="300" r="9" fill="#4cc9f0"/>
+    <line x1="260" y1="300" x2="300" y2="320" stroke="#4cc9f0" stroke-width="2" marker-end="url(#arr)"/>
+    <circle cx="330" cy="260" r="9" fill="#9fe0f5"/>
+    <circle cx="90" cy="250" r="9" fill="#ffc59b"/>
+  </g>
+
+  <!-- 撞墙示意 -->
+  <circle cx="388" cy="340" r="9" fill="#ff8e72"/>
+  <line x1="388" y1="340" x2="406" y2="340" stroke="#ff8e72" stroke-width="3"/>
+  <text x="300" y="135" fill="#ff8e72" font-size="12">撞墙 → 压强 P</text>
+
+  <!-- 右侧：麦克斯韦分布 -->
+  <text x="470" y="120" fill="#e0e1dd" font-size="16" font-weight="bold">速率分布（麦克斯韦）</text>
+  <rect x="470" y="135" width="250" height="180" fill="#08121e" stroke="#2c476a" stroke-width="2" rx="6"/>
+  <!-- 直方柱 -->
+  <g fill="#4cc9f0" opacity="0.75">
+    <rect x="485" y="265" width="16" height="40"/>
+    <rect x="503" y="230" width="16" height="75"/>
+    <rect x="521" y="200" width="16" height="105"/>
+    <rect x="539" y="190" width="16" height="115"/>
+    <rect x="557" y="210" width="16" height="95"/>
+    <rect x="575" y="245" width="16" height="60"/>
+    <rect x="593" y="270" width="16" height="35"/>
+    <rect x="611" y="285" width="16" height="20"/>
+    <rect x="629" y="293" width="16" height="12"/>
+  </g>
+  <!-- 理论曲线 -->
+  <path d="M478,305 Q500,250 540,188 Q580,230 640,300 L700,304" fill="none" stroke="#ffd166" stroke-width="3"/>
+  <text x="640" y="332" fill="#9aa6b2" font-size="12">速率 v →</text>
+  <text x="476" y="150" fill="#ffd166" font-size="12">理论曲线</text>
+
+  <!-- 公式带 -->
+  <rect x="470" y="340" width="250" height="80" fill="#1b263b" rx="8"/>
+  <text x="486" y="368" fill="#4cc9f0" font-size="16">P · V = N · k · T</text>
+  <text x="486" y="394" fill="#e0e1dd" font-size="13">(1/2) m &lt;v²&gt; = k T  （二维）</text>
+  <text x="486" y="412" fill="#9aa6b2" font-size="12">温度 = 分子平均平动动能的量度</text>
+</svg>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>李萨如图形 · 互动示波器</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 18px 48px;}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .stage{display:flex;gap:18px;flex-wrap:wrap;}
+  .canvas-card{background:var(--panel);border-radius:14px;padding:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);flex:1 1 520px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#061018;}
+  .side{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:14px;}
+  .panel{background:var(--panel);border-radius:14px;padding:16px 18px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);}
+  .panel h2{font-size:15px;margin:0 0 12px;color:var(--accent);letter-spacing:.5px;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--muted);}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#7b9acc);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  button{background:#16314d;color:var(--ink);border:1px solid #2c476a;
+    padding:8px 13px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s;}
+  button:hover{background:var(--accent);color:#061018;}
+  button.on{background:var(--accent);color:#061018;}
+  .presets button{flex:1 1 auto;}
+  .stat{background:#11233a;border-radius:10px;padding:10px 12px;text-align:center;margin-top:6px;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:24px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .formula{background:#11233a;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;}
+  .formula code{color:var(--accent);font-size:14px;}
+  .note{font-size:12.5px;color:var(--muted);line-height:1.7;}
+  footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>李萨如图形<span class="en">Lissajous Figures</span></h1>
+  <p class="intro">两个互相垂直的简谐振动叠加，会在示波器荧光屏上画出优美的封闭曲线——频率比决定形状，相位差决定姿态。</p>
+
+  <div class="stage">
+    <div class="canvas-card">
+      <canvas id="cv" width="640" height="560"></canvas>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h2>控制面板</h2>
+        <div class="ctrl">
+          <label>水平频率 a <b><span id="aVal">3</span></b></label>
+          <input type="range" id="a" min="1" max="6" step="1" value="3">
+        </div>
+        <div class="ctrl">
+          <label>垂直频率 b <b><span id="bVal">2</span></b></label>
+          <input type="range" id="b" min="1" max="6" step="1" value="2">
+        </div>
+        <div class="ctrl">
+          <label>相位差 &delta; <b><span id="dVal">0</span>&deg;</b></label>
+          <input type="range" id="d" min="0" max="360" step="1" value="0">
+        </div>
+        <div class="ctrl">
+          <label>拖尾保留 <b><span id="fadeVal">85</span>%</b></label>
+          <input type="range" id="fade" min="0" max="98" step="1" value="85">
+        </div>
+        <div class="btns">
+          <button id="play" class="on">暂停</button>
+          <button id="clear">清屏</button>
+          <button id="spin">相位自动旋转</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>预设频率比</h2>
+        <div class="btns presets">
+          <button data-a="1" data-b="1">1 : 1</button>
+          <button data-a="1" data-b="2">1 : 2</button>
+          <button data-a="2" data-b="3">2 : 3</button>
+          <button data-a="3" data-b="4">3 : 4</button>
+        </div>
+        <div class="stat">
+          <div class="k">当前频率比 (约分)</div>
+          <div class="v"><span id="ratio">3 : 2</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>公式与原理</h2>
+        <div class="formula">
+          <code>x = A &middot; sin(a&middot;t + &delta;)</code><br>
+          <code>y = B &middot; sin(b&middot;t)</code><br>
+        </div>
+        <p class="note" style="margin-bottom:0;">
+          当频率比 a:b 为简单整数比时，轨迹是封闭曲线；曲线与水平、竖直边相切点数之比 = 竖直频率 : 水平频率。
+          示波器把一路信号接 X 偏转板、另一路接 Y 偏转板，即可用此法比较两个未知频率（如音叉、交流电）。
+        </p>
+      </div>
+    </div>
+  </div>
+  <footer>高中物理互动演示 · 纯离线运行 · 无外部依赖</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+
+  // 主图区域（正方形）+ 顶部水平投影 + 左侧竖直投影
+  var M = 70;                 // 边距，用于放投影波
+  var plot = { x:M, y:M, w:W-M-30, h:H-M-30 };
+  var cx = plot.x + plot.w/2;
+  var cy = plot.y + plot.h/2;
+  var A = plot.w/2 - 14;
+  var B = plot.h/2 - 14;
+
+  var params = { a:3, b:2, d:0, fade:85 };
+  var playing = true;
+  var spinning = false;
+  var t = 0;
+
+  // 离屏画布做拖尾余晖
+  var trail = document.createElement("canvas");
+  trail.width = W; trail.height = H;
+  var tctx = trail.getContext("2d");
+
+  function bindSlider(id, key, valId){
+    var el = document.getElementById(id);
+    var out = document.getElementById(valId);
+    el.addEventListener("input", function(){
+      params[key] = Number(el.value);
+      out.textContent = params[key];
+      if (key === "a" || key === "b") updateRatio();
+      clearTrail();
+    });
+  }
+  bindSlider("a","a","aVal");
+  bindSlider("b","b","bVal");
+  bindSlider("d","d","dVal");
+  bindSlider("fade","fade","fadeVal");
+
+  document.getElementById("play").addEventListener("click", function(){
+    playing = !playing;
+    this.textContent = playing ? "暂停" : "播放";
+    this.classList.toggle("on", playing);
+  });
+  document.getElementById("clear").addEventListener("click", clearTrail);
+  document.getElementById("spin").addEventListener("click", function(){
+    spinning = !spinning;
+    this.classList.toggle("on", spinning);
+  });
+
+  var presetBtns = document.querySelectorAll(".presets button");
+  for (var i=0;i<presetBtns.length;i++){
+    presetBtns[i].addEventListener("click", function(){
+      var na = Number(this.getAttribute("data-a"));
+      var nb = Number(this.getAttribute("data-b"));
+      params.a = na; params.b = nb;
+      document.getElementById("a").value = na;
+      document.getElementById("b").value = nb;
+      document.getElementById("aVal").textContent = na;
+      document.getElementById("bVal").textContent = nb;
+      updateRatio();
+      clearTrail();
+    });
+  }
+
+  function gcd(p,q){ return q === 0 ? p : gcd(q, p % q); }
+  function updateRatio(){
+    var g = gcd(params.a, params.b) || 1;
+    document.getElementById("ratio").textContent = (params.a/g) + " : " + (params.b/g);
+  }
+
+  function clearTrail(){
+    tctx.clearRect(0,0,W,H);
+  }
+
+  function pt(tt){
+    var d = params.d * Math.PI/180;
+    return {
+      x: cx + A * Math.sin(params.a * tt + d),
+      y: cy + B * Math.sin(params.b * tt)
+    };
+  }
+
+  var last = performance.now();
+  function loop(now){
+    var dt = Math.min(0.05, (now-last)/1000);
+    last = now;
+
+    if (playing){
+      if (spinning){
+        params.d = (params.d + 30*dt) % 360;
+        document.getElementById("d").value = Math.round(params.d);
+        document.getElementById("dVal").textContent = Math.round(params.d);
+      }
+      // 余晖衰减：用半透明黑覆盖
+      var keep = params.fade/100;
+      tctx.fillStyle = "rgba(6,16,24," + (1 - keep) + ")";
+      tctx.fillRect(0,0,W,H);
+
+      // 在拖尾层上画一小段弧线（多步以保证连续）
+      var steps = 6;
+      tctx.lineWidth = 2.2;
+      tctx.lineCap = "round";
+      tctx.shadowColor = "#4cc9f0";
+      tctx.shadowBlur = 8;
+      tctx.strokeStyle = "#4cc9f0";
+      var prev = pt(t);
+      for (var s=1;s<=steps;s++){
+        var nt = t + (s/steps)*0.045;
+        var p = pt(nt);
+        tctx.beginPath();
+        tctx.moveTo(prev.x, prev.y);
+        tctx.lineTo(p.x, p.y);
+        tctx.stroke();
+        prev = p;
+      }
+      tctx.shadowBlur = 0;
+      t += 0.045;
+    }
+
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // 坐标网格
+    ctx.strokeStyle = "rgba(76,201,240,0.08)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(plot.x, plot.y, plot.w, plot.h);
+    ctx.beginPath();
+    ctx.moveTo(cx, plot.y); ctx.lineTo(cx, plot.y+plot.h);
+    ctx.moveTo(plot.x, cy); ctx.lineTo(plot.x+plot.w, cy);
+    ctx.stroke();
+
+    // 拖尾图层
+    ctx.drawImage(trail, 0, 0);
+
+    var cur = pt(t);
+
+    // 顶部水平投影波 (x 振动)
+    ctx.strokeStyle = "rgba(255,209,102,0.85)";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    var d = params.d * Math.PI/180;
+    for (var i=0;i<=plot.w;i+=3){
+      var tt = t - (i/plot.w)*2.2;
+      var xv = cx + A * Math.sin(params.a*tt + d);
+      var yy = 36 - 22 * Math.sin(params.a*tt + d)/1; // 在顶部画
+      var px = plot.x + i;
+      if (i===0) ctx.moveTo(px, 36 - 22*Math.sin(params.a*tt+d)); 
+      else ctx.lineTo(px, 36 - 22*Math.sin(params.a*tt+d));
+    }
+    ctx.stroke();
+    // 连线：投影点到当前点
+    ctx.strokeStyle = "rgba(255,209,102,0.35)";
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(cur.x, 36); ctx.lineTo(cur.x, cur.y);
+    ctx.stroke();
+
+    // 左侧竖直投影波 (y 振动)
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(126,224,255,0.85)";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (var j=0;j<=plot.h;j+=3){
+      var tj = t - (j/plot.h)*2.2;
+      var py = plot.y + j;
+      var xx = 36 - 22*Math.sin(params.b*tj);
+      if (j===0) ctx.moveTo(36 - 22*Math.sin(params.b*tj), py);
+      else ctx.lineTo(36 - 22*Math.sin(params.b*tj), py);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(126,224,255,0.35)";
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(36, cur.y); ctx.lineTo(cur.x, cur.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 当前光点
+    ctx.beginPath();
+    ctx.arc(cur.x, cur.y, 5, 0, Math.PI*2);
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "#4cc9f0"; ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 标注
+    ctx.fillStyle = "#9aa6b2";
+    ctx.font = "12px sans-serif";
+    ctx.fillText("X 振动", plot.x+plot.w-58, 18);
+    ctx.fillText("Y 振动", 6, plot.y+12);
+  }
+
+  updateRatio();
+  clearTrail();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高中物理震撼实验馆 · Physics Demo Lab</title>
+<style>
+  :root{--bg:#0d1b2a;--panel:#1b263b;--ink:#e0e1dd;--muted:#9aa6b2;--accent:#4cc9f0;--gold:#ffd166;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .hero{position:relative;overflow:hidden;padding:54px 20px 40px;text-align:center;
+    background:radial-gradient(1200px 400px at 50% -120px,rgba(76,201,240,.18),transparent);}
+  .hero h1{font-size:34px;margin:0 0 10px;letter-spacing:2px;}
+  .hero p{color:var(--muted);font-size:16px;margin:0 auto;max-width:680px;line-height:1.8;}
+  .hero canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;opacity:.5;}
+  .wrap{max-width:1100px;margin:0 auto;padding:10px 20px 64px;}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0 30px;}
+  .bar span{background:var(--panel);border:1px solid #2a3a52;border-radius:20px;
+    padding:6px 14px;font-size:13px;color:var(--muted);}
+  .bar span b{color:var(--accent);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
+  a.card{display:flex;flex-direction:column;background:var(--panel);border:1px solid #2a3a52;
+    border-radius:16px;padding:18px;text-decoration:none;color:var(--ink);transition:.18s;
+    box-shadow:0 6px 18px rgba(0,0,0,.3);}
+  a.card:hover{transform:translateY(-5px);border-color:var(--accent);
+    box-shadow:0 14px 30px rgba(76,201,240,.2);}
+  .num{display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;
+    border-radius:9px;background:#05101c;color:var(--accent);font-weight:700;font-size:15px;
+    border:1px solid #2a3a52;margin-bottom:12px;}
+  .title{font-size:17px;font-weight:600;margin:0 0 4px;}
+  .en{color:var(--accent);font-size:12px;font-weight:400;}
+  .desc{color:var(--muted);font-size:13px;line-height:1.6;margin:8px 0 12px;flex:1;}
+  .tag{align-self:flex-start;background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.4);
+    color:var(--gold);font-size:11.5px;border-radius:6px;padding:3px 9px;}
+  footer{margin-top:40px;color:var(--muted);font-size:12.5px;text-align:center;line-height:1.9;}
+  footer a{color:var(--accent);text-decoration:none;}
+</style>
+</head>
+<body>
+<header class="hero">
+  <canvas id="bgwave"></canvas>
+  <h1>高中物理震撼实验馆</h1>
+  <p>11 个可交互、可离线运行的物理演示。每个都配网页模拟器、可打印讲义与原理示意图，并把课本上的经典考点变成你能亲手调节、观察、探究的实验。</p>
+</header>
+
+<div class="wrap">
+  <div class="bar">
+    <span><b>11</b> 个实验</span>
+    <span><b>纯前端</b> 零依赖</span>
+    <span><b>离线</b> 可运行</span>
+    <span>含 <b>可打印讲义</b></span>
+    <span><b>经典题</b> 实验化</span>
+  </div>
+
+  <div class="grid">
+    <a class="card" href="web/index.html">
+      <div class="num">00</div>
+      <div class="title">摆动波 <span class="en">Pendulum Wave</span></div>
+      <div class="desc">长度渐变的一排单摆同时释放，连成行波又重新同步，催眠级视觉。</div>
+      <div class="tag">经典题：由周期反推 g</div>
+    </a>
+    <a class="card" href="experiments/01-chladni/index.html">
+      <div class="num">01</div>
+      <div class="title">克拉尼图形 <span class="en">Chladni</span></div>
+      <div class="desc">振动方板上的沙子聚集到节线，画出由模式数 (m,n) 决定的对称图案。</div>
+      <div class="tag">经典题：频率 ∝ √(m²+n²)</div>
+    </a>
+    <a class="card" href="experiments/02-double-slit/index.html">
+      <div class="num">02</div>
+      <div class="title">双缝干涉 <span class="en">Double-Slit</span></div>
+      <div class="desc">相干光在屏上形成明暗条纹，含单缝衍射包络与白光彩色条纹。</div>
+      <div class="tag">经典题：测波长 λ=d·Δy/L</div>
+    </a>
+    <a class="card" href="experiments/03-doppler/index.html">
+      <div class="num">03</div>
+      <div class="title">多普勒效应 <span class="en">Doppler</span></div>
+      <div class="desc">运动声源的波前前密后疏，超声速时出现马赫锥（声爆）。</div>
+      <div class="tag">经典题：火车鸣笛求 Δf</div>
+    </a>
+    <a class="card" href="experiments/04-lissajous/index.html">
+      <div class="num">04</div>
+      <div class="title">李萨如图形 <span class="en">Lissajous</span></div>
+      <div class="desc">两个垂直简谐振动合成的封闭曲线，示波器荧光风格，可旋转相位。</div>
+      <div class="tag">经典题：示波器测频率</div>
+    </a>
+    <a class="card" href="experiments/05-eddy-brake/index.html">
+      <div class="num">05</div>
+      <div class="title">涡流制动 <span class="en">Eddy Brake</span></div>
+      <div class="desc">磁铁穿铜管缓缓下落，对照自由落体，楞次定律的可视化。</div>
+      <div class="tag">经典题：终极速度 v=mg/k</div>
+    </a>
+    <a class="card" href="experiments/06-monkey-hunter/index.html">
+      <div class="num">06</div>
+      <div class="title">猎人射猴 <span class="en">Monkey & Hunter</span></div>
+      <div class="desc">直瞄目标开枪，目标同时下落必被命中，可切换反例对照。</div>
+      <div class="tag">经典题：命中与初速无关</div>
+    </a>
+    <a class="card" href="experiments/07-resonance/index.html">
+      <div class="num">07</div>
+      <div class="title">受迫振动与共振 <span class="en">Resonance</span></div>
+      <div class="desc">弹簧振子受迫振动与共振曲线，含塔科马大桥、高脚杯、荡秋千情景。</div>
+      <div class="tag">经典题：共振危险频率</div>
+    </a>
+    <a class="card" href="experiments/08-standing-wave/index.html">
+      <div class="num">08</div>
+      <div class="title">弦上驻波 <span class="en">Standing Wave</span></div>
+      <div class="desc">两端固定弦的谐波驻波，标注节点波腹，可拆解出两列反向行波。</div>
+      <div class="tag">经典题：弦乐定音/测声速</div>
+    </a>
+    <a class="card" href="experiments/09-gas-kinetics/index.html">
+      <div class="num">09</div>
+      <div class="title">气体动理论 <span class="en">Kinetic Theory</span></div>
+      <div class="desc">上百小球弹性碰撞，速率自发趋向麦克斯韦分布，活塞验证状态方程。</div>
+      <div class="tag">经典题：P·V = N·k·T</div>
+    </a>
+    <a class="card" href="experiments/10-newtons-cradle/index.html">
+      <div class="num">10</div>
+      <div class="title">牛顿摆 <span class="en">Newton's Cradle</span></div>
+      <div class="desc">抬起 k 球弹出 k 球，实时监测动量与动能，可调恢复系数看衰减。</div>
+      <div class="tag">经典题：为何不能一球双速</div>
+    </a>
+  </div>
+
+  <footer>
+    caimingye78/physicsexperiment · 全部纯前端、无外部依赖，双击任意 index.html 即可离线运行<br>
+    每个实验文件夹内含 <a href="experiments/">模拟器 index.html、讲义 handout.md、示意图 diagram.svg</a>
+  </footer>
+</div>
+
+<script>
+// 首页背景：一条轻盈的摆动波动画，呼应主题
+(function(){
+  var cv = document.getElementById("bgwave");
+  var ctx = cv.getContext("2d");
+  function resize(){ cv.width = cv.offsetWidth; cv.height = cv.offsetHeight; }
+  resize(); window.addEventListener("resize", resize);
+  var N = 22, t = 0;
+  function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    var topY = cv.height*0.16;
+    for (var i=0;i<N;i++){
+      var px = cv.width*(0.12 + 0.76*i/(N-1));
+      var len = cv.height*0.30 + i*2.0;
+      var th = 0.5*Math.cos(t*(1+ i*0.012) + i*0.4);
+      var bx = px + len*Math.sin(th);
+      var by = topY + len*Math.cos(th);
+      ctx.strokeStyle = "rgba(154,166,178,0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px, topY); ctx.lineTo(bx, by); ctx.stroke();
+      var hue = 190 + i*6;
+      ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI*2);
+      ctx.fillStyle = "hsla("+hue+",70%,60%,0.8)"; ctx.fill();
+    }
+    t += 0.02;
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>

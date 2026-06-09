@@ -1,47 +1,41 @@
-# 摆动波物理实验 · Pendulum Wave
+# physicsexperiment · 高中物理震撼实验馆
 
-一个视觉震撼、原理纯粹的高中物理演示实验。一排长度精心计算过的单摆同时释放后，
-会先后形成「行波 → 多段波 → 散乱 → 重新同步」的催眠级视觉效果，全程约 1 分钟循环一次，
-而背后只用到一个公式：单摆周期 `T = 2π√(L/g)`。
+一组可交互、可离线运行的高中物理演示实验。每个实验都包含网页模拟器、可打印讲义与原理示意图，并把经典考点"实验化"成可动手探究的环节。
 
-![摆动波示意图](assets/pendulum_wave.svg)
+在线访问（GitHub Pages 部署后）：`https://caimingye78.github.io/physicsexperiment/`
+本地访问：直接用浏览器打开根目录的 `index.html`。
 
-## 仓库内容
+## 实验清单
 
-| 路径 | 说明 |
-| --- | --- |
-| `scripts/pendulum_lengths.py` | 计算每个摆长度的脚本，可导出 CSV / JSON |
-| `web/index.html` | 浏览器实时模拟器，滑块可调数量、循环时间、摆角、速度 |
-| `docs/lab-handout.md` | 实验讲义（Markdown） |
-| `docs/print.html` | 打印友好版讲义，点「打印 / 导出 PDF」即可生成 PDF |
-| `docs/lengths.csv` | 15 个摆的参考数据表 |
-| `assets/pendulum_wave.svg` | 原理示意图 |
+| # | 实验 | 关键物理 | 经典题实验化 |
+| --- | --- | --- | --- |
+| 00 | [摆动波](web/index.html) | 单摆周期 T = 2π√(L/g) | 由周期反推重力加速度 g |
+| 01 | [克拉尼图形](experiments/01-chladni/) | 二维驻波 / 节线 | 频率 ∝ √(m²+n²) |
+| 02 | [双缝干涉](experiments/02-double-slit/) | I = I0·cos²(πd·sinθ/λ) | 测波长 λ=d·Δy/L、缺级 |
+| 03 | [多普勒效应](experiments/03-doppler/) | f' = f·(v±vo)/(v∓vs) | 火车鸣笛求 Δf、马赫锥 |
+| 04 | [李萨如图形](experiments/04-lissajous/) | 垂直简谐振动合成 | 示波器测未知频率 |
+| 05 | [涡流制动](experiments/05-eddy-brake/) | 楞次定律 | 终极速度 v=m·g/k |
+| 06 | [猎人射猴](experiments/06-monkey-hunter/) | 抛体运动独立性 | 命中与初速无关的证明 |
+| 07 | [受迫振动与共振](experiments/07-resonance/) | 共振曲线 | 塔科马大桥/高脚杯危险频率 |
+| 08 | [弦上驻波](experiments/08-standing-wave/) | λ = 2L/n，f_n = n·v/(2L) | 弦乐器定音、测声速 |
+| 09 | [气体动理论](experiments/09-gas-kinetics/) | 麦克斯韦分布 | P·V = N·k·T 验证 |
+| 10 | [牛顿摆](experiments/10-newtons-cradle/) | 动量与动能双守恒 | 为何不能"一球双速"弹出 |
 
-## 快速开始
+## 目录结构
 
-打开模拟器（无需任何依赖）：
+- `index.html` — 统一首页（实验馆入口，含全部 11 个实验）
+- `experiments/` — 10 个实验，每个含 `index.html`（模拟器）、`handout.md`（讲义）、`diagram.svg`（示意图）
+- `web/`、`scripts/`、`docs/` — 摆动波实验：模拟器、摆长计算脚本、讲义与数据表
+- `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流
+
+## 运行方式
+
+纯前端、无外部依赖，双击任意 `index.html` 即可离线运行。也可启动本地服务：
 
 ```bash
-# 直接用浏览器打开 web/index.html，或：
-python3 -m http.server 8000   # 然后访问 http://localhost:8000/web/
+python3 -m http.server 8000   # 然后访问 http://localhost:8000/
 ```
 
-重新计算摆长（例如 20 个摆、循环 60 秒、小球半径 9 mm）：
+## 在线发布（GitHub Pages）
 
-```bash
-python3 scripts/pendulum_lengths.py -n 20 -c 60 -b 51 -r 9 --csv docs/lengths.csv --json web/lengths.json
-```
-
-## 设计原理
-
-设总循环时间 `T_cycle`（如 60 s），最长摆完成 `base` 次全振动，其后每个摆多 1 次：
-
-```
-N_k = base + (k - 1)          每个摆在一个循环内的振动次数
-T_k = T_cycle / N_k           该摆的周期
-L_k = g * (T_k / 2π)^2        该摆的长度
-```
-
-各摆相位逐渐错开形成行波；经过 `T_cycle` 后每个摆都完成整数次振动，重新排成直线。
-
-详见 [实验讲义](docs/lab-handout.md)。
+本仓库已内置部署工作流。合并到 `main` 后，在 GitHub 仓库的 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions** 即可，几分钟后即可通过上面的 Pages 网址在线点击访问。

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>牛顿摆 · 互动模拟</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px 18px 48px;}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .stage{display:flex;gap:18px;flex-wrap:wrap;}
+  .canvas-card{background:var(--panel);border-radius:14px;padding:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);flex:1 1 560px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#08121e;}
+  .side{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:14px;}
+  .panel{background:var(--panel);border-radius:14px;padding:16px 18px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);}
+  .panel h2{font-size:15px;margin:0 0 12px;color:var(--accent);letter-spacing:.5px;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--muted);}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#7b9acc);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  button{background:#16314d;color:var(--ink);border:1px solid #2c476a;
+    padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s;}
+  button:hover{background:var(--accent);color:#08121e;}
+  button.on{background:var(--accent);color:#08121e;}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat{background:#11233a;border-radius:10px;padding:10px 12px;text-align:center;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .stat.p .v{color:#7ee0ff;}
+  .stat.e .v{color:#ffd166;}
+  .formula{background:#11233a;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;}
+  .formula code{color:var(--accent);font-size:14px;}
+  .legend{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px;}
+  .swatch{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+  footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>牛顿摆<span class="en">Newton's Cradle</span></h1>
+  <p class="intro">拉起 k 个钢球放手，另一端就恰好弹出 k 个——动量与动能在弹性碰撞中同时守恒的经典演示。</p>
+
+  <div class="stage">
+    <div class="canvas-card">
+      <canvas id="cv" width="680" height="480"></canvas>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h2>控制面板</h2>
+        <div class="ctrl">
+          <label>钢球数量 <b><span id="nVal">5</span> 个</b></label>
+          <input type="range" id="n" min="3" max="9" value="5" step="1">
+        </div>
+        <div class="ctrl">
+          <label>抬起球数 k <b><span id="kVal">1</span> 个</b></label>
+          <input type="range" id="k" min="1" max="4" value="1" step="1">
+        </div>
+        <div class="ctrl">
+          <label>抬起角度 <b><span id="aVal">50</span>°</b></label>
+          <input type="range" id="a" min="15" max="75" value="50" step="1">
+        </div>
+        <div class="ctrl">
+          <label>恢复系数 e <b><span id="eVal">1.00</span></b></label>
+          <input type="range" id="e" min="70" max="100" value="100" step="1">
+        </div>
+        <div class="btns">
+          <button id="release" class="on">释放</button>
+          <button id="reset">重置</button>
+          <button id="pause">暂停</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>守恒量监测</h2>
+        <div class="readout">
+          <div class="stat p"><div class="k">总动量 Σmv</div><div class="v"><span id="oP">0.00</span></div></div>
+          <div class="stat e"><div class="k">总动能 Σ½mv²</div><div class="v"><span id="oE">0.00</span></div></div>
+        </div>
+        <div class="legend">
+          理想弹性（e=1）时两者均保持恒定；降低恢复系数 e 可观察非弹性碰撞下动能逐渐损耗、摆动衰减。
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>公式</h2>
+        <div class="formula">
+          动量守恒：<code>Σ m&middot;v = 常数</code><br>
+          动能守恒（弹性）：<code>Σ (1/2) m&middot;v&sup2; = 常数</code><br>
+          等质量弹性对碰：<code>两球交换速度</code><br>
+          单摆速度：<code>v = sqrt(2 g L (1 - cos&theta;))</code><br>
+          恢复系数：<code>e = 分离速度 / 接近速度</code>
+        </div>
+        <div class="legend">
+          <span class="swatch" style="background:#4cc9f0"></span>静止球　
+          <span class="swatch" style="background:#ffd166"></span>运动球
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>高中物理互动演示 · 纯离线运行 · 无外部依赖</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+
+  var params = { n:5, k:1, a:50, e:1.00 };
+  var playing = true;
+
+  // 几何
+  var pivotY = 70;
+  var L = 300;              // 摆长（像素）
+  var R = 22;               // 球半径
+  var spacing = R*2 + 1;    // 相邻球间距（几乎相切）
+  var G = 2400;             // 重力加速度（像素/秒²，放大以便观感）
+
+  // 每个球：theta（与竖直方向夹角，右正），omega（角速度）
+  var balls = [];
+  var baseX = 0;
+
+  function buildBalls(){
+    balls = [];
+    var n = params.n;
+    var totalW = (n-1)*spacing;
+    baseX = W/2 - totalW/2;
+    for (var i=0;i<n;i++){
+      balls.push({ pivotX: baseX + i*spacing, theta:0, omega:0 });
+    }
+  }
+
+  function setInitialLift(){
+    // 抬起左侧 k 个球到 -angle
+    var ang = -params.a * Math.PI/180;
+    var k = Math.min(params.k, params.n-1);
+    for (var i=0;i<balls.length;i++){
+      balls[i].theta = (i < k) ? ang : 0;
+      balls[i].omega = 0;
+    }
+  }
+
+  function ballPos(b){
+    var x = b.pivotX + L*Math.sin(b.theta);
+    var y = pivotY + L*Math.cos(b.theta);
+    return {x:x, y:y};
+  }
+
+  function bindSlider(id, key, valId, fmt, after){
+    var el = document.getElementById(id);
+    var out = document.getElementById(valId);
+    el.addEventListener("input", function(){
+      params[key] = Number(el.value);
+      out.textContent = fmt ? fmt(params[key]) : params[key];
+      if (after) after();
+    });
+  }
+  bindSlider("n","n","nVal", null, function(){
+    if (params.k > params.n-1){ params.k = params.n-1;
+      document.getElementById("k").value = params.k;
+      document.getElementById("kVal").textContent = params.k; }
+    document.getElementById("k").max = params.n-1;
+    buildBalls(); setInitialLift();
+  });
+  bindSlider("k","k","kVal", null, function(){ setInitialLift(); });
+  bindSlider("a","a","aVal", null, function(){ setInitialLift(); });
+  bindSlider("e","e","eVal", function(v){ return (v/100).toFixed(2); }, function(){
+    params.e = Number(document.getElementById("e").value)/100;
+  });
+  params.e = 1.00;
+
+  document.getElementById("release").addEventListener("click", function(){
+    // 直接让其按当前抬起姿态自由运动
+    playing = true;
+    document.getElementById("pause").textContent = "暂停";
+    document.getElementById("pause").classList.add("on");
+  });
+  document.getElementById("reset").addEventListener("click", function(){
+    buildBalls(); setInitialLift();
+  });
+  document.getElementById("pause").addEventListener("click", function(){
+    playing = !playing;
+    this.textContent = playing ? "暂停" : "播放";
+    this.classList.toggle("on", playing);
+  });
+
+  // 单摆动力学 + 顺序碰撞处理
+  function physics(dt){
+    var i, b;
+    // 1) 摆动积分（半隐式欧拉）
+    for (i=0;i<balls.length;i++){
+      b = balls[i];
+      var alpha = -(G/L) * Math.sin(b.theta);
+      b.omega += alpha*dt;
+      b.theta += b.omega*dt;
+    }
+    // 2) 碰撞：相邻球在最低点附近沿水平线相切，比较水平位置
+    // 用 theta 排序检测相互穿透（左球 theta 应 <= 右球 theta + 切触阈值）
+    // 切触条件：右球与左球间距 <= spacing
+    for (i=0;i<balls.length-1;i++){
+      var a = balls[i], c = balls[i+1];
+      var pa = ballPos(a), pc = ballPos(c);
+      var dx = pc.x - pa.x;
+      var dy = pc.y - pa.y;
+      var dist = Math.hypot(dx, dy);
+      if (dist < spacing - 0.5){
+        // 计算两球沿摆动方向的线速度 v = omega * L
+        var va = a.omega * L;
+        var vc = c.omega * L;
+        var approach = va - vc; // 左追右
+        if (approach > 0){
+          // 等质量碰撞，含恢复系数 e
+          var e = params.e;
+          var vaN = ((1-e)*va + (1+e)*vc)/2;
+          var vcN = ((1+e)*va + (1-e)*vc)/2;
+          a.omega = vaN / L;
+          c.omega = vcN / L;
+          // 分离重叠：把右球沿角度推开一点
+          var push = (spacing - dist)/L;
+          c.theta += push*0.5;
+          a.theta -= push*0.5;
+        }
+      }
+    }
+  }
+
+  function measure(){
+    var p = 0, e = 0;
+    for (var i=0;i<balls.length;i++){
+      var v = balls[i].omega * L; // 线速度（像素/秒）
+      p += v;                      // 等质量，m=1
+      e += 0.5 * v*v;
+    }
+    document.getElementById("oP").textContent = (p/1000).toFixed(2);
+    document.getElementById("oE").textContent = (e/1e6).toFixed(2);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // 顶部横梁
+    ctx.fillStyle = "#2c476a";
+    ctx.fillRect(W/2-180, pivotY-26, 360, 12);
+    ctx.fillStyle = "#16314d";
+    ctx.fillRect(W/2-186, pivotY-34, 12, 24);
+    ctx.fillRect(W/2+174, pivotY-34, 12, 24);
+
+    var maxOmega = 0;
+    for (var m=0;m<balls.length;m++) maxOmega = Math.max(maxOmega, Math.abs(balls[m].omega));
+
+    for (var i=0;i<balls.length;i++){
+      var b = balls[i];
+      var pos = ballPos(b);
+      // 吊线（双线吊挂更真实）
+      ctx.strokeStyle = "rgba(154,166,178,0.7)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(b.pivotX-10, pivotY-14); ctx.lineTo(pos.x, pos.y);
+      ctx.moveTo(b.pivotX+10, pivotY-14); ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      // 球：运动越快越偏黄
+      var spd = Math.abs(b.omega)/(maxOmega+0.0001);
+      var moving = spd > 0.05;
+      var grd = ctx.createRadialGradient(pos.x-7, pos.y-7, 4, pos.x, pos.y, R);
+      if (moving){
+        grd.addColorStop(0, "#fff3c4");
+        grd.addColorStop(1, "#ffd166");
+      } else {
+        grd.addColorStop(0, "#bfeeff");
+        grd.addColorStop(1, "#4cc9f0");
+      }
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, R, 0, Math.PI*2);
+      ctx.fillStyle = grd;
+      ctx.shadowColor = moving ? "#ffd166" : "#4cc9f0";
+      ctx.shadowBlur = moving ? 18 : 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // 高光环
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // 悬挂点
+      ctx.beginPath();
+      ctx.arc(b.pivotX, pivotY-14, 3, 0, Math.PI*2);
+      ctx.fillStyle = "#9aa6b2";
+      ctx.fill();
+    }
+    // 提示文字
+    ctx.fillStyle = "#9aa6b2";
+    ctx.font = "13px sans-serif";
+    ctx.fillText("拖动滑块设定抬起球数与角度，点击\u201c释放\u201d观察另一端弹出相同数量的球", 16, H-16);
+  }
+
+  var last = performance.now();
+  var frame = 0;
+  function loop(now){
+    var dt = Math.min(0.025, (now-last)/1000);
+    last = now;
+    if (playing){
+      // 子步提高碰撞稳定性
+      var sub = 4;
+      for (var s=0;s<sub;s++) physics(dt/sub);
+    }
+    draw();
+    if ((frame++ % 4)===0) measure();
+    requestAnimationFrame(loop);
+  }
+
+  buildBalls();
+  setInitialLift();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

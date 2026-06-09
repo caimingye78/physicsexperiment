@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多普勒效应 · 互动模拟</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 18px 48px;}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .stage{display:flex;gap:18px;flex-wrap:wrap;}
+  .canvas-card{background:var(--panel);border-radius:14px;padding:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);flex:1 1 560px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#08121e;}
+  .side{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:14px;}
+  .panel{background:var(--panel);border-radius:14px;padding:16px 18px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);}
+  .panel h2{font-size:15px;margin:0 0 12px;color:var(--accent);letter-spacing:.5px;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--muted);}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#7b9acc);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  button{background:#16314d;color:var(--ink);border:1px solid #2c476a;
+    padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s;}
+  button:hover{background:var(--accent);color:#08121e;}
+  button.on{background:var(--accent);color:#08121e;}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat{background:#11233a;border-radius:10px;padding:10px 12px;text-align:center;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .stat.front .v{color:#ff8e72;}
+  .stat.back .v{color:#7ee0ff;}
+  .stat.obs .v{color:#ffd166;}
+  .formula{background:#11233a;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;}
+  .formula code{color:var(--accent);font-size:14px;}
+  .shock{margin-top:10px;padding:8px 12px;border-radius:9px;font-size:13px;text-align:center;
+    background:#11233a;color:var(--muted);}
+  .shock.active{background:#5a1f1f;color:#ffb3a0;font-weight:600;}
+  .legend{font-size:12px;color:var(--muted);line-height:1.7;}
+  .legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+  footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>多普勒效应<span class="en">Doppler Effect</span></h1>
+  <p class="intro">当声源向你靠近时音调变高，远离时变低——这就是救护车经过时鸣笛"由尖变闷"的物理原因。</p>
+
+  <div class="stage">
+    <div class="canvas-card">
+      <canvas id="cv" width="720" height="460"></canvas>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h2>控制面板</h2>
+        <div class="ctrl">
+          <label>声源速度 vs <b><span id="vsVal">120</span> m/s</b></label>
+          <input type="range" id="vs" min="0" max="420" value="120">
+        </div>
+        <div class="ctrl">
+          <label>声速 v <b><span id="vVal">340</span> m/s</b></label>
+          <input type="range" id="v" min="120" max="500" value="340">
+        </div>
+        <div class="ctrl">
+          <label>发射频率 f <b><span id="fVal">440</span> Hz</b></label>
+          <input type="range" id="f" min="100" max="900" value="440">
+        </div>
+        <div class="btns">
+          <button id="play" class="on">暂停</button>
+          <button id="reset">重置</button>
+          <button id="toggleObs" class="on">隐藏观察者</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>实时观测频率</h2>
+        <div class="readout">
+          <div class="stat front"><div class="k">前方 (靠近)</div><div class="v"><span id="fFront">—</span></div></div>
+          <div class="stat back"><div class="k">后方 (远离)</div><div class="v"><span id="fBack">—</span></div></div>
+          <div class="stat obs" style="grid-column:1/3"><div class="k">固定观察者实际接收</div><div class="v"><span id="fObs">—</span> Hz</div></div>
+        </div>
+        <div class="shock" id="shock">马赫数 M = <span id="mach">0.35</span>（亚音速）</div>
+      </div>
+
+      <div class="panel">
+        <h2>公式</h2>
+        <div class="formula">
+          观测频率：<code>f' = f &times; (v &plusmn; vo) / (v &#8723; vs)</code><br>
+          靠近声源取 <code>(v) / (v - vs)</code>，远离取 <code>(v) / (v + vs)</code>。<br>
+          本模拟观察者静止，故 vo = 0。<br>
+          当 vs &gt; v 时形成马赫锥（声爆）。
+        </div>
+        <div class="legend" style="margin-top:10px;">
+          <span class="dot" style="background:#4cc9f0"></span>声源　
+          <span class="dot" style="background:#ffd166"></span>观察者　
+          <span class="dot" style="background:#5e7799"></span>波前圆
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>高中物理互动演示 · 纯离线运行 · 无外部依赖</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+
+  // 比例：把 m/s 缩放到画布像素。1 像素 ≈ scale 米
+  var PX_PER_M = 0.9;        // 显示缩放
+  var TIME_SCALE = 1.0;      // 模拟时间倍率
+
+  var params = { vs:120, v:340, f:440 };
+  var playing = true;
+  var showObs = true;
+
+  // 声源状态
+  var srcX = 60, srcY = H/2;
+  var waves = [];            // {x,y,t0}
+  var simT = 0;
+  var emitAccum = 0;
+
+  // 观察者
+  var obsX = W - 90, obsY = H/2;
+
+  function bindSlider(id, key, valId, fmt){
+    var el = document.getElementById(id);
+    var out = document.getElementById(valId);
+    el.addEventListener("input", function(){
+      params[key] = Number(el.value);
+      out.textContent = fmt ? fmt(params[key]) : params[key];
+      updateReadout();
+    });
+  }
+  bindSlider("vs","vs","vsVal");
+  bindSlider("v","v","vVal");
+  bindSlider("f","f","fVal");
+
+  document.getElementById("play").addEventListener("click", function(){
+    playing = !playing;
+    this.textContent = playing ? "暂停" : "播放";
+    this.classList.toggle("on", playing);
+  });
+  document.getElementById("reset").addEventListener("click", function(){
+    waves = []; srcX = 60; simT = 0; emitAccum = 0;
+  });
+  document.getElementById("toggleObs").addEventListener("click", function(){
+    showObs = !showObs;
+    this.textContent = showObs ? "隐藏观察者" : "显示观察者";
+    this.classList.toggle("on", showObs);
+  });
+
+  function updateReadout(){
+    var v = params.v, vs = params.vs, f = params.f;
+    var mach = vs / v;
+    document.getElementById("mach").textContent = mach.toFixed(2);
+    var shockEl = document.getElementById("shock");
+    if (mach >= 1){
+      shockEl.classList.add("active");
+      shockEl.innerHTML = "马赫数 M = " + mach.toFixed(2) + " — 超音速！形成声爆冲击锥";
+    } else {
+      shockEl.classList.remove("active");
+      shockEl.innerHTML = "马赫数 M = <span id='mach'>" + mach.toFixed(2) + "</span>（亚音速）";
+    }
+
+    // 前方（声源朝向观察者方向）观测频率
+    var fFront, fBack;
+    if (vs < v){
+      fFront = f * v / (v - vs);
+      fBack  = f * v / (v + vs);
+      document.getElementById("fFront").textContent = fFront.toFixed(0) + " Hz";
+      document.getElementById("fBack").textContent  = fBack.toFixed(0) + " Hz";
+    } else {
+      document.getElementById("fFront").textContent = "声爆";
+      document.getElementById("fBack").textContent  = fBack = (f * v / (v + vs)).toFixed(0) + " Hz";
+    }
+  }
+
+  function computeObsFreq(){
+    // 声源水平向右运动，观察者在右侧 -> 靠近时取 (v - vs)
+    var v = params.v, vs = params.vs, f = params.f;
+    var dir = (obsX - srcX) >= 0 ? 1 : -1; // 观察者在声源前方为 +1
+    // 声源朝右运动，若观察者在前方则靠近
+    var denom;
+    if (dir > 0) denom = v - vs; else denom = v + vs;
+    if (denom <= 0) return null; // 超音速且在前方，无定义（声爆）
+    return f * v / denom;
+  }
+
+  var last = performance.now();
+  function loop(now){
+    var dt = Math.min(0.05, (now - last)/1000) * TIME_SCALE;
+    last = now;
+    if (playing){
+      simT += dt;
+      // 移动声源
+      srcX += params.vs * PX_PER_M * dt;
+      if (srcX > W + 40){ srcX = -40; }
+      // 发射波前：每 1/f 秒发一个（限制频率避免过密）
+      var emitInterval = 1 / Math.min(params.f, 60) * 6; // 视觉间隔
+      emitAccum += dt;
+      while (emitAccum >= emitInterval){
+        emitAccum -= emitInterval;
+        waves.push({x:srcX, y:srcY, t0:simT});
+      }
+      // 清理过大波前
+      waves = waves.filter(function(w){
+        var r = (simT - w.t0) * params.v * PX_PER_M;
+        return r < W * 1.6;
+      });
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // 背景网格
+    ctx.strokeStyle = "rgba(76,201,240,0.06)";
+    ctx.lineWidth = 1;
+    for (var gx=0; gx<W; gx+=40){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+    for (var gy=0; gy<H; gy+=40){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+
+    // 波前圆
+    for (var i=0;i<waves.length;i++){
+      var w = waves[i];
+      var r = (simT - w.t0) * params.v * PX_PER_M;
+      if (r <= 0) continue;
+      var alpha = Math.max(0, 1 - r/(W*1.2));
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, r, 0, Math.PI*2);
+      ctx.strokeStyle = "rgba(94,119,153," + (0.15 + 0.55*alpha) + ")";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+
+    // 马赫锥（超音速时）
+    if (params.vs > params.v){
+      var sinA = params.v / params.vs;
+      var ang = Math.asin(Math.max(-1,Math.min(1,sinA)));
+      ctx.strokeStyle = "rgba(255,142,114,0.8)";
+      ctx.lineWidth = 2;
+      var L = W*1.5;
+      ctx.beginPath();
+      ctx.moveTo(srcX, srcY);
+      ctx.lineTo(srcX - L*Math.cos(ang), srcY - L*Math.sin(ang));
+      ctx.moveTo(srcX, srcY);
+      ctx.lineTo(srcX - L*Math.cos(ang), srcY + L*Math.sin(ang));
+      ctx.stroke();
+    }
+
+    // 速度矢量
+    ctx.strokeStyle = "#4cc9f0";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(srcX, srcY);
+    ctx.lineTo(srcX + Math.min(60, params.vs*0.25), srcY);
+    ctx.stroke();
+    // 箭头
+    var ax = srcX + Math.min(60, params.vs*0.25);
+    ctx.beginPath();
+    ctx.moveTo(ax, srcY);
+    ctx.lineTo(ax-7, srcY-4);
+    ctx.lineTo(ax-7, srcY+4);
+    ctx.closePath();
+    ctx.fillStyle = "#4cc9f0";
+    ctx.fill();
+
+    // 声源
+    ctx.beginPath();
+    ctx.arc(srcX, srcY, 9, 0, Math.PI*2);
+    ctx.fillStyle = "#4cc9f0";
+    ctx.shadowColor = "#4cc9f0"; ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 观察者
+    if (showObs){
+      ctx.beginPath();
+      ctx.arc(obsX, obsY, 8, 0, Math.PI*2);
+      ctx.fillStyle = "#ffd166";
+      ctx.shadowColor = "#ffd166"; ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#ffd166";
+      ctx.font = "12px sans-serif";
+      ctx.fillText("观察者", obsX-22, obsY-14);
+
+      var fo = computeObsFreq();
+      document.getElementById("fObs").textContent = fo ? fo.toFixed(0) : "声爆";
+    } else {
+      document.getElementById("fObs").textContent = "—";
+    }
+  }
+
+  updateReadout();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

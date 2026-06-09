@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>弦上驻波 · 节点、波腹与谐波</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .layout{display:flex;gap:18px;flex-wrap:wrap;}
+  .stage{flex:1 1 460px;min-width:320px;}
+  .side{flex:0 0 320px;min-width:280px;}
+  .panel{background:var(--panel);border:1px solid #2a3a52;border-radius:12px;
+    padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  canvas{display:block;width:100%;border-radius:12px;background:#05101c;
+    border:1px solid #2a3a52;}
+  .row{margin:12px 0;}
+  .row label{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--muted);margin-bottom:6px;}
+  .row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#274b63);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  button{background:#274b63;color:var(--ink);border:1px solid var(--accent);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accent);color:#05101c;}
+  button.active{background:var(--accent);color:#05101c;}
+  .formula{background:#05101c;border:1px dashed var(--accent);border-radius:10px;
+    padding:12px;font-size:13px;line-height:1.7;color:var(--ink);}
+  .formula code{color:var(--accent);}
+  .stat{font-size:13px;color:var(--muted);line-height:1.8;}
+  .stat b{color:var(--ink);}
+  .chip{display:inline-block;background:#05101c;border:1px solid #2a3a52;border-radius:20px;
+    padding:3px 10px;margin:2px 4px 2px 0;font-size:12px;color:var(--accent);cursor:pointer;}
+  .chip:hover{background:var(--accent);color:#05101c;}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .legend{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.8;}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>弦上驻波 <span class="en">Standing Waves on a String</span></h1>
+  <p class="intro">两端固定的弦上，两列反向传播的行波叠加成驻波——节点不动，波腹剧烈起伏，只有特定谐波频率能稳定存在。</p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="panel">
+        <canvas id="cv" width="680" height="360"></canvas>
+        <div class="legend">
+          <span class="dot" style="background:#ff7b7b"></span>节点（不动）
+          <span class="dot" style="background:#ffd166"></span>波腹（振幅最大）
+          <span class="dot" style="background:#4cc9f0"></span>合成驻波
+          <span class="dot" style="background:#6f9; opacity:.7"></span>右行波
+          <span class="dot" style="background:#c792ea; opacity:.7"></span>左行波
+        </div>
+      </div>
+      <div class="panel">
+        <canvas id="piano" width="680" height="120"></canvas>
+        <div class="hint">谐波频谱：当前谐波 n 对应的频率 f_n = n·v/(2L)，点击柱子可直接切换到该谐波。</div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="row">
+          <label>谐波数 n <b id="nVal">3</b></label>
+          <input type="range" id="n" min="1" max="8" step="1" value="3">
+        </div>
+        <div class="row">
+          <label>振幅 A <b id="aVal">1.0</b></label>
+          <input type="range" id="amp" min="0.2" max="2" step="0.1" value="1">
+        </div>
+        <div class="row">
+          <label>波速 v <b id="vVal">1.0</b></label>
+          <input type="range" id="speed" min="0.2" max="3" step="0.1" value="1">
+        </div>
+        <div class="btns">
+          <button id="travel">显示行波分量</button>
+          <button id="pause">暂停</button>
+          <button id="pluck">拨弦一下</button>
+        </div>
+        <div class="hint">乐音音阶（弦长不变改 n）：
+          <span class="chip" data-n="1">基频</span>
+          <span class="chip" data-n="2">八度</span>
+          <span class="chip" data-n="3">十二度</span>
+          <span class="chip" data-n="4">双八度</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stat" id="stat"></div>
+      </div>
+
+      <div class="panel">
+        <div class="formula">
+          驻波：<br>
+          <code>y(x,t) = 2A·sin(n·π·x/L)·cos(ω·t)</code><br><br>
+          由两列行波叠加：<br>
+          <code>A·sin(kx−ωt) + A·sin(kx+ωt)</code><br><br>
+          波长 <code>λ = 2L/n</code><br>
+          频率 <code>f_n = n·v/(2L)</code><br>
+          节点数 = n+1，波腹数 = n。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  var pv = document.getElementById("piano");
+  var px = pv.getContext("2d");
+  var PW = pv.width, PH = pv.height;
+
+  var nEl = document.getElementById("n");
+  var aEl = document.getElementById("amp");
+  var vEl = document.getElementById("speed");
+  var nVal = document.getElementById("nVal");
+  var aVal = document.getElementById("aVal");
+  var vVal = document.getElementById("vVal");
+  var stat = document.getElementById("stat");
+
+  var S = {
+    n: 3, A: 1.0, v: 1.0, t: 0,
+    showTravel: false, paused: false,
+    pluckEnv: 0
+  };
+
+  var L = 1.0;           // string length (unit)
+  var marginX = 60;      // px margins for the string
+  var midY = H*0.46;
+  var ampPx = 70;        // px per unit amplitude
+
+  function k(){ return S.n*Math.PI/L; }
+  function omega(){ return k()*S.v; }
+
+  function xToPx(x){ return marginX + (W-2*marginX)*(x/L); }
+
+  function draw(){
+    ctx.fillStyle = "#05101c";
+    ctx.fillRect(0,0,W,H);
+
+    var w = omega();
+    var A = S.A * (1 + 0.0*S.pluckEnv);
+    var env = 1 + 0.6*S.pluckEnv;   // pluck makes a brief amplitude burst
+
+    // fixed-end posts
+    ctx.fillStyle = "#274b63";
+    ctx.fillRect(xToPx(0)-10, midY-46, 8, 92);
+    ctx.fillRect(xToPx(L)+2, midY-46, 8, 92);
+
+    // equilibrium axis
+    ctx.strokeStyle = "#13212f"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xToPx(0),midY); ctx.lineTo(xToPx(L),midY); ctx.stroke();
+
+    var Npts = 400;
+
+    // optional traveling-wave components
+    if (S.showTravel){
+      // right-moving: A sin(kx - wt)
+      ctx.strokeStyle = "rgba(102,255,153,0.6)"; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      for (var i=0;i<=Npts;i++){
+        var x = L*i/Npts;
+        var y = A*Math.sin(k()*x - w*S.t);
+        var Px = xToPx(x), Py = midY - y*ampPx*env;
+        if (i===0) ctx.moveTo(Px,Py); else ctx.lineTo(Px,Py);
+      }
+      ctx.stroke();
+      // left-moving: A sin(kx + wt)
+      ctx.strokeStyle = "rgba(199,146,234,0.6)"; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      for (var j=0;j<=Npts;j++){
+        var x2 = L*j/Npts;
+        var y2 = A*Math.sin(k()*x2 + w*S.t);
+        var Px2 = xToPx(x2), Py2 = midY - y2*ampPx*env;
+        if (j===0) ctx.moveTo(Px2,Py2); else ctx.lineTo(Px2,Py2);
+      }
+      ctx.stroke();
+    }
+
+    // standing-wave envelope (faint)
+    ctx.strokeStyle = "rgba(76,201,240,0.18)"; ctx.lineWidth=1;
+    ctx.beginPath();
+    for (var e=0;e<=Npts;e++){
+      var xe=L*e/Npts;
+      var ye = 2*A*Math.abs(Math.sin(k()*xe));
+      var Pxe=xToPx(xe), Pye=midY - ye*ampPx*env;
+      if (e===0) ctx.moveTo(Pxe,Pye); else ctx.lineTo(Pxe,Pye);
+    }
+    for (var e2=Npts;e2>=0;e2--){
+      var xe2=L*e2/Npts;
+      var ye2 = 2*A*Math.abs(Math.sin(k()*xe2));
+      ctx.lineTo(xToPx(xe2), midY + ye2*ampPx*env);
+    }
+    ctx.stroke();
+
+    // standing wave y = 2A sin(kx) cos(wt)
+    var grad = ctx.createLinearGradient(xToPx(0),0,xToPx(L),0);
+    grad.addColorStop(0,"#4cc9f0"); grad.addColorStop(1,"#4cc9f0");
+    ctx.strokeStyle = "#4cc9f0"; ctx.lineWidth=3;
+    ctx.shadowColor="#4cc9f0"; ctx.shadowBlur=8;
+    ctx.beginPath();
+    for (var s=0;s<=Npts;s++){
+      var x=L*s/Npts;
+      var y = 2*A*Math.sin(k()*x)*Math.cos(w*S.t);
+      var Px=xToPx(x), Py=midY - y*ampPx*env;
+      if (s===0) ctx.moveTo(Px,Py); else ctx.lineTo(Px,Py);
+    }
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // nodes (n+1 of them, at x = i*L/n)
+    for (var node=0;node<=S.n;node++){
+      var xn = node*L/S.n;
+      ctx.fillStyle="#ff7b7b";
+      ctx.beginPath(); ctx.arc(xToPx(xn), midY, 5,0,Math.PI*2); ctx.fill();
+    }
+    // antinodes (n of them, at x = (i+0.5)*L/n)
+    for (var an=0;an<S.n;an++){
+      var xa = (an+0.5)*L/S.n;
+      var ya = 2*A*Math.sin(k()*xa)*Math.cos(w*S.t);
+      ctx.fillStyle="#ffd166";
+      ctx.beginPath(); ctx.arc(xToPx(xa), midY - ya*ampPx*env, 4,0,Math.PI*2); ctx.fill();
+    }
+
+    // wavelength bracket (one full wavelength = 2 loops)
+    if (S.n>=1){
+      var lamX0 = xToPx(0);
+      var lamX1 = xToPx(Math.min(2*L/S.n, L));
+      var by = H-40;
+      ctx.strokeStyle="#9aa6b2"; ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(lamX0,by-6); ctx.lineTo(lamX0,by+6);
+      ctx.moveTo(lamX0,by); ctx.lineTo(lamX1,by);
+      ctx.moveTo(lamX1,by-6); ctx.lineTo(lamX1,by+6);
+      ctx.stroke();
+      ctx.fillStyle="#9aa6b2"; ctx.font="12px Segoe UI";
+      ctx.fillText("λ = 2L/n", (lamX0+lamX1)/2-26, by-10);
+    }
+
+    // labels
+    ctx.fillStyle="#9aa6b2"; ctx.font="12px Segoe UI";
+    ctx.fillText("固定端", xToPx(0)-18, midY+62);
+    ctx.fillText("固定端", xToPx(L)-12, midY+62);
+    ctx.fillStyle="#4cc9f0"; ctx.font="bold 14px Segoe UI";
+    ctx.fillText("n = "+S.n+" 次谐波（"+S.n+" 个波腹）", marginX, 28);
+  }
+
+  function drawPiano(){
+    px.fillStyle="#05101c"; px.fillRect(0,0,PW,PH);
+    var bars=8, gap=10, bw=(PW-20-gap*(bars-1))/bars;
+    for (var i=1;i<=bars;i++){
+      var bx = 10 + (i-1)*(bw+gap);
+      var fnRel = i; // frequency proportional to n
+      var bh = (PH-30)*(fnRel/bars);
+      var active = (i===S.n);
+      px.fillStyle = active ? "#ffd166" : "#274b63";
+      px.fillRect(bx, PH-20-bh, bw, bh);
+      px.strokeStyle = active ? "#fff" : "#2a3a52";
+      px.lineWidth = active?2:1;
+      px.strokeRect(bx, PH-20-bh, bw, bh);
+      px.fillStyle = active?"#ffd166":"#9aa6b2"; px.font="11px Segoe UI";
+      px.fillText("f"+i, bx+bw/2-6, PH-6);
+    }
+    px.fillStyle="#9aa6b2"; px.font="12px Segoe UI";
+    px.fillText("基频的整数倍：f_n = n·f_1", 10, 16);
+  }
+
+  function updateStat(){
+    var lam = 2*L/S.n;
+    var f1 = S.v/(2*L);
+    var fn = S.n*S.v/(2*L);
+    stat.innerHTML =
+      "谐波数 n = <b>"+S.n+"</b><br>"+
+      "波长 λ = 2L/n = <b>"+lam.toFixed(3)+" L</b><br>"+
+      "基频 f₁ = v/2L = <b>"+f1.toFixed(3)+"</b><br>"+
+      "频率 f_n = n·v/2L = <b>"+fn.toFixed(3)+"</b>（= "+S.n+"·f₁）<br>"+
+      "节点数 = <b>"+(S.n+1)+"</b>，波腹数 = <b>"+S.n+"</b>";
+  }
+
+  function loop(){
+    if (!S.paused) S.t += 0.03;
+    if (S.pluckEnv>0){ S.pluckEnv *= 0.96; if (S.pluckEnv<0.001) S.pluckEnv=0; }
+    draw();
+    drawPiano();
+    requestAnimationFrame(loop);
+  }
+
+  nEl.addEventListener("input", function(){ S.n=+nEl.value; nVal.textContent=S.n; updateStat(); });
+  aEl.addEventListener("input", function(){ S.A=+aEl.value; aVal.textContent=S.A.toFixed(1); updateStat(); });
+  vEl.addEventListener("input", function(){ S.v=+vEl.value; vVal.textContent=S.v.toFixed(1); updateStat(); });
+
+  var travelBtn = document.getElementById("travel");
+  travelBtn.addEventListener("click", function(){
+    S.showTravel=!S.showTravel;
+    travelBtn.textContent = S.showTravel ? "隐藏行波分量" : "显示行波分量";
+    travelBtn.classList.toggle("active", S.showTravel);
+  });
+  var pauseBtn = document.getElementById("pause");
+  pauseBtn.addEventListener("click", function(){
+    S.paused=!S.paused; pauseBtn.textContent=S.paused?"继续":"暂停";
+    pauseBtn.classList.toggle("active", S.paused);
+  });
+  document.getElementById("pluck").addEventListener("click", function(){
+    S.pluckEnv = 1.0;
+  });
+  var chips = document.querySelectorAll(".chip");
+  for (var c=0;c<chips.length;c++){
+    chips[c].addEventListener("click", function(){
+      S.n=+this.getAttribute("data-n"); nEl.value=S.n; nVal.textContent=S.n; updateStat();
+    });
+  }
+  // click on spectrum bars to switch harmonic
+  pv.addEventListener("click", function(ev){
+    var rect = pv.getBoundingClientRect();
+    var mx = (ev.clientX-rect.left) * (PW/rect.width);
+    var bars=8, gap=10, bw=(PW-20-gap*(bars-1))/bars;
+    for (var i=1;i<=bars;i++){
+      var bx = 10 + (i-1)*(bw+gap);
+      if (mx>=bx && mx<=bx+bw){ S.n=i; nEl.value=i; nVal.textContent=i; updateStat(); break; }
+    }
+  });
+
+  updateStat();
+  loop();
+})();
+</script>
+</body>
+</html>

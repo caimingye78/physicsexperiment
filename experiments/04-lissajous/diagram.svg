@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#9aa6b2"/>
+    </marker>
+  </defs>
+
+  <rect width="720" height="420" fill="#0d1b2a"/>
+  <text x="360" y="34" fill="#e0e1dd" font-size="22" font-weight="bold" text-anchor="middle">李萨如图形：垂直振动的合成</text>
+
+  <!-- 顶部水平振动波 (X) -->
+  <text x="150" y="70" fill="#ffd166" font-size="13" text-anchor="middle">X 振动: x = A·sin(a·t + δ)</text>
+  <path d="M40,100 Q70,70 100,100 T160,100 T220,100 T280,100" fill="none" stroke="#ffd166" stroke-width="2"/>
+
+  <!-- 左侧竖直振动波 (Y) -->
+  <text x="70" y="150" fill="#7ee0ff" font-size="13" text-anchor="middle">Y 振动</text>
+  <text x="70" y="168" fill="#7ee0ff" font-size="13" text-anchor="middle">y = B·sin(b·t)</text>
+  <path d="M60,190 Q90,220 60,250 T60,310 T60,370" fill="none" stroke="#7ee0ff" stroke-width="2"/>
+
+  <!-- 合成示波屏 -->
+  <rect x="300" y="120" width="240" height="240" rx="10" fill="#061018" stroke="#2c476a"/>
+  <line x1="420" y1="120" x2="420" y2="360" stroke="#4cc9f0" stroke-opacity="0.15"/>
+  <line x1="300" y1="240" x2="540" y2="240" stroke="#4cc9f0" stroke-opacity="0.15"/>
+
+  <!-- 3:2 李萨如曲线 (近似采样点连线) -->
+  <polyline fill="none" stroke="#4cc9f0" stroke-width="2.4"
+    points="420,130 458,150 492,184 514,228 518,276 502,318 470,346 428,356 386,344 354,316 338,274 342,226 364,184 398,150 420,130 442,150 466,184 482,228 486,276 470,318 438,346"/>
+  <circle cx="420" cy="130" r="5" fill="#ffffff"/>
+
+  <!-- 投影虚线 -->
+  <line x1="150" y1="100" x2="420" y2="130" stroke="#ffd166" stroke-width="1" stroke-dasharray="4 4" stroke-opacity="0.5"/>
+  <line x1="60" y1="190" x2="420" y2="130" stroke="#7ee0ff" stroke-width="1" stroke-dasharray="4 4" stroke-opacity="0.5"/>
+
+  <text x="420" y="384" fill="#9aa6b2" font-size="13" text-anchor="middle">示波屏 (X-Y 模式)</text>
+
+  <!-- 右侧说明 -->
+  <text x="600" y="170" fill="#e0e1dd" font-size="14" text-anchor="middle">频率比 a:b = 3:2</text>
+  <text x="600" y="196" fill="#9aa6b2" font-size="12" text-anchor="middle">水平切点 : 竖直切点</text>
+  <text x="600" y="214" fill="#9aa6b2" font-size="12" text-anchor="middle">= 2 : 3</text>
+  <text x="600" y="250" fill="#9aa6b2" font-size="12" text-anchor="middle">相位差 δ 改变</text>
+  <text x="600" y="268" fill="#9aa6b2" font-size="12" text-anchor="middle">曲线的姿态</text>
+
+  <!-- 公式框 -->
+  <rect x="170" y="392" width="380" height="0" />
+  <text x="360" y="408" fill="#9aa6b2" font-size="12" text-anchor="middle">两路信号分别接 X、Y 偏转板，即可比较未知频率</text>
+</svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="480" viewBox="0 0 760 480" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1b2a"/>
+      <stop offset="1" stop-color="#0a1622"/>
+    </linearGradient>
+  </defs>
+  <rect width="760" height="480" fill="url(#bg)"/>
+
+  <text x="30" y="40" fill="#e0e1dd" font-size="22" font-weight="bold">弦上驻波</text>
+  <text x="30" y="64" fill="#4cc9f0" font-size="14">y(x,t) = 2A&#183;sin(n&#960;x/L)&#183;cos(&#969;t)</text>
+
+  <!-- harmonic n=1 -->
+  <g transform="translate(60,110)">
+    <text x="-30" y="6" fill="#9aa6b2" font-size="13">n=1</text>
+    <line x1="0" y1="0" x2="600" y2="0" stroke="#13212f" stroke-width="1"/>
+    <rect x="-8" y="-26" width="6" height="52" fill="#274b63"/>
+    <rect x="600" y="-26" width="6" height="52" fill="#274b63"/>
+    <path d="M0,0 Q150,-40 300,0 Q450,40 600,0" fill="none" stroke="#4cc9f0" stroke-width="2.5"/>
+    <path d="M0,0 Q150,40 300,0 Q450,-40 600,0" fill="none" stroke="#4cc9f0" stroke-width="1" opacity="0.4" stroke-dasharray="4 4"/>
+    <circle cx="0" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="600" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="300" cy="-40" r="4" fill="#ffd166"/>
+    <text x="610" y="5" fill="#9aa6b2" font-size="12">&#955;=2L</text>
+  </g>
+
+  <!-- harmonic n=2 -->
+  <g transform="translate(60,200)">
+    <text x="-30" y="6" fill="#9aa6b2" font-size="13">n=2</text>
+    <line x1="0" y1="0" x2="600" y2="0" stroke="#13212f" stroke-width="1"/>
+    <rect x="-8" y="-26" width="6" height="52" fill="#274b63"/>
+    <rect x="600" y="-26" width="6" height="52" fill="#274b63"/>
+    <path d="M0,0 Q75,-36 150,0 Q225,36 300,0 Q375,-36 450,0 Q525,36 600,0" fill="none" stroke="#4cc9f0" stroke-width="2.5"/>
+    <circle cx="0" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="300" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="600" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="150" cy="-36" r="4" fill="#ffd166"/>
+    <circle cx="450" cy="-36" r="4" fill="#ffd166"/>
+    <text x="610" y="5" fill="#9aa6b2" font-size="12">&#955;=L</text>
+  </g>
+
+  <!-- harmonic n=3 -->
+  <g transform="translate(60,290)">
+    <text x="-30" y="6" fill="#9aa6b2" font-size="13">n=3</text>
+    <line x1="0" y1="0" x2="600" y2="0" stroke="#13212f" stroke-width="1"/>
+    <rect x="-8" y="-26" width="6" height="52" fill="#274b63"/>
+    <rect x="600" y="-26" width="6" height="52" fill="#274b63"/>
+    <path d="M0,0 Q50,-34 100,0 Q150,34 200,0 Q250,-34 300,0 Q350,34 400,0 Q450,-34 500,0 Q550,34 600,0" fill="none" stroke="#4cc9f0" stroke-width="2.5"/>
+    <circle cx="0" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="200" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="400" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="600" cy="0" r="5" fill="#ff7b7b"/>
+    <circle cx="100" cy="-34" r="4" fill="#ffd166"/>
+    <circle cx="300" cy="-34" r="4" fill="#ffd166"/>
+    <circle cx="500" cy="-34" r="4" fill="#ffd166"/>
+    <text x="610" y="5" fill="#9aa6b2" font-size="12">&#955;=2L/3</text>
+  </g>
+
+  <!-- legend -->
+  <g transform="translate(60,360)">
+    <circle cx="6" cy="0" r="5" fill="#ff7b7b"/><text x="18" y="5" fill="#9aa6b2" font-size="13">节点（不动）</text>
+    <circle cx="146" cy="0" r="4" fill="#ffd166"/><text x="158" y="5" fill="#9aa6b2" font-size="13">波腹（振幅最大 2A）</text>
+  </g>
+
+  <text x="30" y="420" fill="#9aa6b2" font-size="13">两端固定条件：L = n&#183;(&#955;/2)  &#8594;  &#955; = 2L/n，  f_n = n&#183;v/(2L) = n&#183;f&#8321;（基频的整数倍）。</text>
+  <text x="30" y="446" fill="#9aa6b2" font-size="13">驻波 = 右行波 A&#183;sin(kx&#8722;&#969;t) + 左行波 A&#183;sin(kx+&#969;t) 的叠加。</text>
+</svg>

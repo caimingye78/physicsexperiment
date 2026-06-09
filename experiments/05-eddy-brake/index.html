@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>涡流制动 · 楞次定律</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .layout{display:flex;gap:18px;flex-wrap:wrap;}
+  .stage{flex:1 1 460px;min-width:340px;}
+  .side{flex:0 0 320px;min-width:280px;}
+  .panel{background:var(--panel);border:1px solid #2a3a52;border-radius:12px;
+    padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  canvas{display:block;width:100%;border-radius:12px;background:#05101c;
+    border:1px solid #2a3a52;}
+  .row{margin:12px 0;}
+  .row label{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--muted);margin-bottom:6px;}
+  .row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#274b63);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  button{background:#274b63;color:var(--ink);border:1px solid var(--accent);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accent);color:#05101c;}
+  button.active{background:var(--accent);color:#05101c;}
+  .formula{background:#05101c;border:1px dashed var(--accent);border-radius:10px;
+    padding:12px;font-size:13px;line-height:1.7;color:var(--ink);}
+  .formula code{color:var(--accent);}
+  .stat{font-size:13px;color:var(--muted);line-height:1.8;}
+  .stat b{color:var(--ink);}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>涡流制动 <span class="en">Eddy-Current Brake · Lenz's Law</span></h1>
+  <p class="intro">磁铁穿过铜管时，管壁中感应出涡流；涡流的磁场总是阻碍磁通量的变化，于是磁铁像被无形的手托住，缓缓下落。</p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="panel">
+        <canvas id="cv" width="720" height="520"></canvas>
+        <div class="legend">
+          <span><span class="dot" style="background:#9aa6b2"></span>左：空气中自由下落</span>
+          <span><span class="dot" style="background:#4cc9f0"></span>右：铜管中涡流制动</span>
+        </div>
+        <div class="hint" id="hint">提示：点击「释放磁铁」让两侧同时下落，观察到达底部的时间差。</div>
+      </div>
+      <div class="panel">
+        <canvas id="vt" width="720" height="220"></canvas>
+        <div class="hint">速度—时间曲线：自由落体为直线 v=g·t；铜管中速度趋于终极速度 v_term=m·g/k。</div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="row">
+          <label>磁铁磁性强度 <b id="magVal">1.0</b></label>
+          <input type="range" id="mag" min="0.3" max="2.5" step="0.1" value="1.0">
+        </div>
+        <div class="row">
+          <label>铜管电导率（材质） <b id="condVal">1.0</b></label>
+          <input type="range" id="cond" min="0.2" max="2.5" step="0.1" value="1.0">
+        </div>
+        <div class="row">
+          <label>磁铁质量 m / g <b id="massVal">30</b></label>
+          <input type="range" id="mass" min="5" max="120" step="1" value="30">
+        </div>
+        <div class="btns">
+          <button id="drop">释放磁铁</button>
+          <button id="reset">复位</button>
+          <button id="slow">慢动作</button>
+        </div>
+        <div class="hint">制动系数 k 与「磁性强度² × 电导率」成正比；磁性或电导率越大，下落越慢。</div>
+      </div>
+
+      <div class="panel">
+        <div class="stat" id="stat"></div>
+      </div>
+
+      <div class="panel">
+        <div class="formula">
+          牛顿第二定律（含涡流阻力）：<br>
+          <code>m·dv/dt = m·g − k·v</code><br><br>
+          终极速度（阻力与重力平衡时）：<br>
+          <code>v_term = m·g / k</code><br><br>
+          解析解：<br>
+          <code>v(t) = v_term·(1 − e^(−k·t/m))</code><br><br>
+          楞次定律：感应涡流的磁场<b>阻碍</b>磁通量变化，<br>
+          故阻力方向始终与速度相反。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  var vt = document.getElementById("vt");
+  var vctx = vt.getContext("2d");
+  var VW = vt.width, VH = vt.height;
+
+  var magEl = document.getElementById("mag");
+  var condEl = document.getElementById("cond");
+  var massEl = document.getElementById("mass");
+  var magVal = document.getElementById("magVal");
+  var condVal = document.getElementById("condVal");
+  var massVal = document.getElementById("massVal");
+  var stat = document.getElementById("stat");
+  var hint = document.getElementById("hint");
+
+  var g = 9.8;                 // m/s^2
+  var pixPerM = 120;           // pixels per meter for drawing
+  var dropTop = 70;            // y pixel where magnet starts
+  var dropBottom = 470;        // y pixel of ground
+  var fallLenM = (dropBottom - dropTop) / pixPerM; // physical length
+
+  var state = {
+    params: {mag:1.0, cond:1.0, mass:0.030},
+    running: false,
+    slow: false,
+    t: 0,
+    // left = free fall, right = eddy brake
+    free: {y:0, v:0, done:false, tEnd:0},
+    eddy: {y:0, v:0, done:false, tEnd:0},
+    history: [] // {t, vFree, vEddy}
+  };
+
+  function kValue(){
+    // braking coefficient ~ magnet^2 * conductivity, scaled to feel right
+    return 0.06 * state.params.mag * state.params.mag * state.params.cond;
+  }
+
+  function reset(){
+    state.running = false;
+    state.t = 0;
+    state.free = {y:0, v:0, done:false, tEnd:0};
+    state.eddy = {y:0, v:0, done:false, tEnd:0};
+    state.history = [];
+    updateStat();
+  }
+
+  function readParams(){
+    state.params.mag = +magEl.value;
+    state.params.cond = +condEl.value;
+    state.params.mass = (+massEl.value)/1000; // g -> kg
+  }
+
+  function vTerm(){
+    return state.params.mass * g / kValue();
+  }
+
+  function step(dt){
+    var m = state.params.mass;
+    var k = kValue();
+    // free fall
+    if (!state.free.done){
+      state.free.v += g*dt;
+      state.free.y += state.free.v*dt;
+      if (state.free.y >= fallLenM){
+        state.free.y = fallLenM; state.free.done = true; state.free.tEnd = state.t;
+      }
+    }
+    // eddy brake: m dv/dt = m g - k v
+    if (!state.eddy.done){
+      var a = g - (k/m)*state.eddy.v;
+      state.eddy.v += a*dt;
+      state.eddy.y += state.eddy.v*dt;
+      if (state.eddy.y >= fallLenM){
+        state.eddy.y = fallLenM; state.eddy.done = true; state.eddy.tEnd = state.t;
+      }
+    }
+    state.t += dt;
+    state.history.push({t:state.t, vFree:state.free.v, vEddy:state.eddy.v});
+    if (state.history.length > 4000) state.history.shift();
+    if (state.free.done && state.eddy.done) state.running = false;
+  }
+
+  function drawMagnet(x, yTop, w, h){
+    // top half red (N), bottom half blue (S)
+    var r = 6;
+    ctx.fillStyle = "#d64545";
+    roundRect(x-w/2, yTop, w, h/2, r, true);
+    ctx.fillStyle = "#3a7bd5";
+    roundRect(x-w/2, yTop+h/2, w, h/2, r, true);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("N", x, yTop+h*0.30+5);
+    ctx.fillText("S", x, yTop+h*0.78+5);
+    ctx.textAlign = "left";
+  }
+
+  function roundRect(x,y,w,h,r,fill){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    if (fill) ctx.fill(); else ctx.stroke();
+  }
+
+  function drawScene(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = "#05101c";
+    ctx.fillRect(0,0,W,H);
+
+    var leftX = W*0.27;
+    var rightX = W*0.70;
+    var magW = 34, magH = 56;
+
+    // ground line
+    ctx.strokeStyle = "#274b63";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(40, dropBottom+30);
+    ctx.lineTo(W-40, dropBottom+30);
+    ctx.stroke();
+
+    // ---- left: free fall guide rail ----
+    ctx.strokeStyle = "#1f2d40";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5,6]);
+    ctx.beginPath(); ctx.moveTo(leftX, dropTop); ctx.lineTo(leftX, dropBottom+30); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#9aa6b2";
+    ctx.font = "13px Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("空气中", leftX, 40);
+
+    // ---- right: copper tube ----
+    var tubeW = 56;
+    var tubeX = rightX - tubeW/2;
+    // tube body with copper gradient
+    var grad = ctx.createLinearGradient(tubeX,0,tubeX+tubeW,0);
+    grad.addColorStop(0,"#7a4a1e");
+    grad.addColorStop(0.5,"#d98a3d");
+    grad.addColorStop(1,"#7a4a1e");
+    // intensity of tube glow depends on eddy speed
+    ctx.globalAlpha = 0.30;
+    ctx.fillStyle = grad;
+    ctx.fillRect(tubeX, dropTop, tubeW, (dropBottom-dropTop)+30);
+    ctx.globalAlpha = 1;
+    // tube walls
+    ctx.strokeStyle = "#e0a060";
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(tubeX, dropTop); ctx.lineTo(tubeX, dropBottom+30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tubeX+tubeW, dropTop); ctx.lineTo(tubeX+tubeW, dropBottom+30); ctx.stroke();
+    ctx.fillStyle = "#e0a060";
+    ctx.fillText("铜管", rightX, 40);
+    ctx.textAlign = "left";
+
+    // ---- magnets ----
+    var freeYpix = dropTop + state.free.y*pixPerM;
+    var eddyYpix = dropTop + state.eddy.y*pixPerM;
+
+    drawMagnet(leftX, freeYpix, magW, magH);
+
+    // eddy current rings near the eddy magnet (animated arrows)
+    drawEddyCurrents(rightX, eddyYpix, magH, tubeW, state.eddy.v);
+    drawMagnet(rightX, eddyYpix, magW, magH);
+
+    // velocity arrows
+    drawVelArrow(leftX+magW/2+14, freeYpix+magH/2, state.free.v, "#9aa6b2");
+    drawVelArrow(rightX+tubeW/2+14, eddyYpix+magH/2, state.eddy.v, "#4cc9f0");
+
+    // finish flags
+    if (state.free.done) finishFlag(leftX, "#9aa6b2", state.free.tEnd);
+    if (state.eddy.done) finishFlag(rightX, "#4cc9f0", state.eddy.tEnd);
+  }
+
+  function drawEddyCurrents(cx, magTop, magH, tubeW, v){
+    // glowing rings above and below the magnet representing opposing eddy currents
+    var strength = Math.min(Math.abs(v)*0.8, 1);
+    if (strength < 0.02) return;
+    ctx.save();
+    ctx.globalAlpha = 0.25 + 0.6*strength;
+    ctx.strokeStyle = "#ffd27f";
+    ctx.lineWidth = 2;
+    var cyTop = magTop - 14;
+    var cyBot = magTop + magH + 14;
+    for (var i=0;i<2;i++){
+      var rr = tubeW/2 - 4 - i*6;
+      if (rr<4) continue;
+      ctx.beginPath(); ctx.ellipse(cx, cyTop, rr, 7, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cyBot, rr, 7, 0, 0, Math.PI*2); ctx.stroke();
+    }
+    // small arrows to show circulation direction
+    ctx.fillStyle = "#ffd27f";
+    ctx.beginPath();
+    ctx.moveTo(cx+tubeW/2-6, cyTop-3);
+    ctx.lineTo(cx+tubeW/2-12, cyTop-8);
+    ctx.lineTo(cx+tubeW/2-12, cyTop+2);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawVelArrow(x, y, v, color){
+    var len = Math.min(v*pixPerM*0.18, 80);
+    if (len < 2) return;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y+len);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y+len);
+    ctx.lineTo(x-4, y+len-7);
+    ctx.lineTo(x+4, y+len-7);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function finishFlag(x, color, tEnd){
+    ctx.fillStyle = color;
+    ctx.font = "bold 12px Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("到达 t="+tEnd.toFixed(2)+"s", x, dropBottom+50);
+    ctx.textAlign = "left";
+  }
+
+  function drawVT(){
+    vctx.clearRect(0,0,VW,VH);
+    vctx.fillStyle = "#05101c";
+    vctx.fillRect(0,0,VW,VH);
+    var pad = 36;
+    // axes
+    vctx.strokeStyle = "#274b63";
+    vctx.lineWidth = 1;
+    vctx.beginPath();
+    vctx.moveTo(pad, 10); vctx.lineTo(pad, VH-pad); vctx.lineTo(VW-10, VH-pad);
+    vctx.stroke();
+    vctx.fillStyle = "#9aa6b2";
+    vctx.font = "11px Segoe UI, sans-serif";
+    vctx.fillText("v (m/s)", 6, 16);
+    vctx.fillText("t (s)", VW-34, VH-pad+16);
+
+    if (state.history.length < 2) return;
+    var tMax = Math.max(state.history[state.history.length-1].t, 0.5);
+    var vMax = 1;
+    for (var i=0;i<state.history.length;i++){
+      vMax = Math.max(vMax, state.history[i].vFree, state.history[i].vEddy);
+    }
+    vMax *= 1.1;
+    function X(t){ return pad + t/tMax*(VW-10-pad); }
+    function Y(v){ return (VH-pad) - v/vMax*(VH-pad-10); }
+
+    // terminal velocity guide
+    var vt2 = vTerm();
+    if (vt2 < vMax){
+      vctx.strokeStyle = "#3a5068";
+      vctx.setLineDash([4,4]);
+      vctx.beginPath(); vctx.moveTo(pad, Y(vt2)); vctx.lineTo(VW-10, Y(vt2)); vctx.stroke();
+      vctx.setLineDash([]);
+      vctx.fillStyle = "#9aa6b2";
+      vctx.fillText("v_term="+vt2.toFixed(2), VW-120, Y(vt2)-4);
+    }
+
+    // free fall curve
+    vctx.strokeStyle = "#9aa6b2";
+    vctx.lineWidth = 2;
+    vctx.beginPath();
+    for (var j=0;j<state.history.length;j++){
+      var h = state.history[j];
+      if (j===0) vctx.moveTo(X(h.t), Y(h.vFree)); else vctx.lineTo(X(h.t), Y(h.vFree));
+    }
+    vctx.stroke();
+    // eddy curve
+    vctx.strokeStyle = "#4cc9f0";
+    vctx.beginPath();
+    for (var q=0;q<state.history.length;q++){
+      var h2 = state.history[q];
+      if (q===0) vctx.moveTo(X(h2.t), Y(h2.vEddy)); else vctx.lineTo(X(h2.t), Y(h2.vEddy));
+    }
+    vctx.stroke();
+  }
+
+  function updateStat(){
+    var k = kValue();
+    var vt2 = vTerm();
+    var dtArr = "";
+    if (state.free.done && state.eddy.done){
+      var ratio = (state.eddy.tEnd/Math.max(state.free.tEnd,1e-6));
+      dtArr = "时间差：<b>"+(state.eddy.tEnd-state.free.tEnd).toFixed(2)+" s</b>（铜管慢约 "+ratio.toFixed(1)+" 倍）<br>";
+    }
+    stat.innerHTML =
+      "下落高度：<b>"+fallLenM.toFixed(2)+" m</b><br>"+
+      "制动系数 k ≈ <b>"+k.toFixed(3)+"</b> (∝ 磁性²×电导率)<br>"+
+      "终极速度 v_term = m·g/k ≈ <b>"+vt2.toFixed(2)+" m/s</b><br>"+
+      "当前空气中速度：<b>"+state.free.v.toFixed(2)+" m/s</b><br>"+
+      "当前铜管中速度：<b>"+state.eddy.v.toFixed(2)+" m/s</b><br>"+
+      dtArr;
+  }
+
+  var lastTime = 0;
+  function loop(ts){
+    if (!lastTime) lastTime = ts;
+    var realDt = (ts - lastTime)/1000;
+    lastTime = ts;
+    if (realDt > 0.05) realDt = 0.05;
+    var scale = state.slow ? 0.25 : 1;
+    if (state.running){
+      // fixed-step integration for stability
+      var dt = 0.002;
+      var total = realDt*scale;
+      var acc = 0;
+      while (acc < total){
+        step(dt);
+        acc += dt;
+        if (!state.running) break;
+      }
+      updateStat();
+    }
+    drawScene();
+    drawVT();
+    requestAnimationFrame(loop);
+  }
+
+  // events
+  magEl.addEventListener("input", function(){
+    state.params.mag = +magEl.value; magVal.textContent = state.params.mag.toFixed(1);
+    if (!state.running) updateStat();
+  });
+  condEl.addEventListener("input", function(){
+    state.params.cond = +condEl.value; condVal.textContent = state.params.cond.toFixed(1);
+    if (!state.running) updateStat();
+  });
+  massEl.addEventListener("input", function(){
+    state.params.mass = (+massEl.value)/1000; massVal.textContent = massEl.value;
+    if (!state.running) updateStat();
+  });
+  document.getElementById("drop").addEventListener("click", function(){
+    readParams();
+    reset();
+    state.running = true;
+    hint.textContent = "下落中…左侧自由加速，右侧很快达到终极速度匀速下滑。";
+  });
+  document.getElementById("reset").addEventListener("click", function(){
+    readParams(); reset();
+    hint.textContent = "已复位。调整滑块后点击「释放磁铁」。";
+  });
+  var slowBtn = document.getElementById("slow");
+  slowBtn.addEventListener("click", function(){
+    state.slow = !state.slow;
+    slowBtn.textContent = state.slow ? "正常速度" : "慢动作";
+    slowBtn.classList.toggle("active", state.slow);
+  });
+
+  readParams();
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

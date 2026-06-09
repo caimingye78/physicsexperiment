@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>受迫振动与共振 · 弹簧振子的共振曲线</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .layout{display:flex;gap:18px;flex-wrap:wrap;}
+  .stage{flex:1 1 460px;min-width:320px;}
+  .side{flex:0 0 320px;min-width:280px;}
+  .panel{background:var(--panel);border:1px solid #2a3a52;border-radius:12px;
+    padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  canvas{display:block;width:100%;border-radius:12px;background:#05101c;
+    border:1px solid #2a3a52;}
+  .row{margin:12px 0;}
+  .row label{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--muted);margin-bottom:6px;}
+  .row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#274b63);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  button{background:#274b63;color:var(--ink);border:1px solid var(--accent);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accent);color:#05101c;}
+  button.active{background:var(--accent);color:#05101c;}
+  .formula{background:#05101c;border:1px dashed var(--accent);border-radius:10px;
+    padding:12px;font-size:13px;line-height:1.7;color:var(--ink);}
+  .formula code{color:var(--accent);}
+  .stat{font-size:13px;color:var(--muted);line-height:1.8;}
+  .stat b{color:var(--ink);}
+  .chip{display:inline-block;background:#05101c;border:1px solid #2a3a52;border-radius:20px;
+    padding:3px 10px;margin:2px 4px 2px 0;font-size:12px;color:var(--accent);cursor:pointer;}
+  .chip:hover{background:var(--accent);color:#05101c;}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;
+    background:#05101c;border:1px solid #2a3a52;color:var(--accent);}
+  .danger{color:#ff7b7b;border-color:#ff7b7b;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>受迫振动与共振 <span class="en">Driven Damped Resonance</span></h1>
+  <p class="intro">给弹簧振子施加周期性策动力，当策动频率逼近固有频率时，振幅会戏剧性地飙升——这就是共振。</p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="panel">
+        <canvas id="cv" width="680" height="300"></canvas>
+        <div class="hint" id="hint">左侧是被策动的弹簧振子，右侧是共振曲线，亮点标出当前策动频率所在位置。</div>
+      </div>
+      <div class="panel">
+        <canvas id="curve" width="680" height="240"></canvas>
+        <div class="hint">共振曲线：横轴策动频率 ω，纵轴稳态振幅 A。阻尼 β 越小，峰越尖锐。</div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="row">
+          <label>策动频率 ω <b id="wVal">2.00</b></label>
+          <input type="range" id="w" min="0.1" max="6" step="0.02" value="2">
+        </div>
+        <div class="row">
+          <label>固有频率 ω₀ <b id="w0Val">2.50</b></label>
+          <input type="range" id="w0" min="0.5" max="5" step="0.05" value="2.5">
+        </div>
+        <div class="row">
+          <label>阻尼系数 β <b id="bVal">0.20</b></label>
+          <input type="range" id="beta" min="0.02" max="2" step="0.02" value="0.2">
+        </div>
+        <div class="row">
+          <label>策动力幅 F <b id="fVal">1.0</b></label>
+          <input type="range" id="force" min="0.2" max="3" step="0.1" value="1">
+        </div>
+        <div class="btns">
+          <button id="snap">一键调到共振 ω=ω₀</button>
+          <button id="pause">暂停</button>
+          <button id="trace">余迹</button>
+        </div>
+        <div class="hint">经典演示：
+          <span class="chip" data-scene="bridge">塔科马大桥</span>
+          <span class="chip" data-scene="glass">高脚杯破碎</span>
+          <span class="chip" data-scene="swing">荡秋千</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stat" id="stat"></div>
+      </div>
+
+      <div class="panel">
+        <div class="formula">
+          运动方程：<br>
+          <code>x'' + 2·β·x' + ω₀²·x = F·cos(ω·t)</code><br><br>
+          稳态振幅：<br>
+          <code>A = F / sqrt((ω₀²−ω²)² + (2·β·ω)²)</code><br><br>
+          相位滞后：<code>φ = atan2(2·β·ω, ω₀²−ω²)</code><br>
+          共振峰在 <code>ω ≈ sqrt(ω₀²−2β²)</code>。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  var cc = document.getElementById("curve");
+  var cx = cc.getContext("2d");
+  var CW = cc.width, CH = cc.height;
+
+  var wEl = document.getElementById("w");
+  var w0El = document.getElementById("w0");
+  var bEl = document.getElementById("beta");
+  var fEl = document.getElementById("force");
+  var wVal = document.getElementById("wVal");
+  var w0Val = document.getElementById("w0Val");
+  var bVal = document.getElementById("bVal");
+  var fVal = document.getElementById("fVal");
+  var stat = document.getElementById("stat");
+  var hint = document.getElementById("hint");
+
+  var S = {
+    w: 2, w0: 2.5, beta: 0.2, F: 1.0,
+    t: 0, x: 0, v: 0,
+    paused: false, trace: true, scene: "spring",
+    shatter: 0, shards: []
+  };
+
+  function amplitude(w, w0, beta, F){
+    var d = (w0*w0 - w*w);
+    return F / Math.sqrt(d*d + (2*beta*w)*(2*beta*w));
+  }
+
+  // integrate ODE: x'' = F cos(wt) - 2 beta x' - w0^2 x
+  function integrate(dt){
+    var sub = 8, h = dt/sub;
+    for (var i=0;i<sub;i++){
+      var a1 = S.F*Math.cos(S.w*S.t) - 2*S.beta*S.v - S.w0*S.w0*S.x;
+      var v2 = S.v + 0.5*h*a1;
+      var x2 = S.x + 0.5*h*S.v;
+      var a2 = S.F*Math.cos(S.w*(S.t+0.5*h)) - 2*S.beta*v2 - S.w0*S.w0*x2;
+      S.v += h*a2;
+      S.x += h*v2;
+      S.t += h;
+    }
+  }
+
+  // scene presets
+  function setScene(name){
+    S.scene = name;
+    if (name === "bridge"){ S.w0=2.0; S.w=2.0; S.beta=0.05; S.F=1.0; hint.textContent="塔科马海峡大桥(1940)：风的周期性涡街频率接近桥的固有扭转频率，振幅失控直至崩塌。"; }
+    else if (name === "glass"){ S.w0=4.0; S.w=4.0; S.beta=0.08; S.F=1.6; hint.textContent="高脚杯：声波频率匹配杯子固有频率，玻璃边缘振幅暴涨而碎裂。"; S.shatter=0; S.shards=[]; }
+    else if (name === "swing"){ S.w0=1.2; S.w=1.2; S.beta=0.10; S.F=0.8; hint.textContent="荡秋千：在固有频率上有节奏地蹬腿，每次都在'对的时刻'输入能量，越荡越高。"; }
+    syncInputs();
+    updateStat();
+  }
+  function syncInputs(){
+    wEl.value=S.w; w0El.value=S.w0; bEl.value=S.beta; fEl.value=S.F;
+    wVal.textContent=S.w.toFixed(2); w0Val.textContent=S.w0.toFixed(2);
+    bVal.textContent=S.beta.toFixed(2); fVal.textContent=S.F.toFixed(1);
+  }
+
+  function draw(){
+    ctx.fillStyle = "#05101c";
+    ctx.fillRect(0,0,W,H);
+
+    var A = amplitude(S.w, S.w0, S.beta, S.F);
+    // visual scale: clamp so it stays on screen but spike is visible
+    var pxScale = 26;
+    var disp = S.x * pxScale;
+    var maxA = A*pxScale;
+
+    var wallX = 60;
+    var restY = H/2;
+    var baseX = W*0.42;       // equilibrium position of mass
+    var massX = baseX + disp;
+    var nearRes = Math.abs(S.w - Math.sqrt(Math.max(0,S.w0*S.w0-2*S.beta*S.beta))) < 0.15;
+
+    // wall
+    ctx.fillStyle = "#274b63";
+    ctx.fillRect(wallX-14, restY-70, 14, 140);
+    ctx.fillStyle = "#1b263b";
+    for (var s=0;s<7;s++){
+      ctx.fillRect(wallX-26, restY-70+s*20, 12, 10);
+    }
+
+    // spring (zig-zag) from wall to mass
+    var coils = 16;
+    ctx.strokeStyle = nearRes ? "#ff9f59" : "#4cc9f0";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(wallX, restY);
+    var span = massX - 26 - wallX;
+    for (var c=0;c<=coils;c++){
+      var fx = wallX + span*(c/coils);
+      var fy = restY + (c%2===0 ? 0 : (c===0||c===coils?0:-16));
+      ctx.lineTo(fx, fy);
+    }
+    ctx.lineTo(massX-26, restY);
+    ctx.stroke();
+
+    // ground line
+    ctx.strokeStyle = "#1b263b";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, restY+42); ctx.lineTo(W*0.62, restY+42); ctx.stroke();
+
+    // amplitude envelope guides
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = "rgba(154,166,178,0.4)";
+    ctx.beginPath(); ctx.moveTo(baseX-maxA, restY-46); ctx.lineTo(baseX-maxA, restY+46); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(baseX+maxA, restY-46); ctx.lineTo(baseX+maxA, restY+46); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // mass block
+    var glow = nearRes ? "#ff9f59" : "#4cc9f0";
+    ctx.shadowColor = glow; ctx.shadowBlur = nearRes? 24 : 10;
+    ctx.fillStyle = "#e0e1dd";
+    ctx.fillRect(massX-26, restY-26, 52, 52);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = glow; ctx.lineWidth = 3;
+    ctx.strokeRect(massX-26, restY-26, 52, 52);
+    ctx.fillStyle = "#05101c"; ctx.font="13px Segoe UI"; ctx.textAlign="center";
+    ctx.fillText("m", massX, restY+5);
+    ctx.textAlign="left";
+
+    // driving force arrow (oscillating)
+    var fdir = Math.cos(S.w*S.t);
+    var arrowLen = 30*fdir;
+    ctx.strokeStyle = "#ffd166"; ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(massX, restY-44);
+    ctx.lineTo(massX+arrowLen, restY-44);
+    ctx.stroke();
+    if (Math.abs(arrowLen)>5){
+      var sgn = fdir>0?1:-1;
+      ctx.beginPath();
+      ctx.moveTo(massX+arrowLen, restY-44);
+      ctx.lineTo(massX+arrowLen-8*sgn, restY-49);
+      ctx.lineTo(massX+arrowLen-8*sgn, restY-39);
+      ctx.closePath(); ctx.fillStyle="#ffd166"; ctx.fill();
+    }
+    ctx.fillStyle="#ffd166"; ctx.font="12px Segoe UI";
+    ctx.fillText("F·cos(ωt)", massX-24, restY-54);
+
+    // mini time-trace on the right of this canvas
+    var tx0 = W*0.66, tw = W-tx0-16, ty = restY;
+    ctx.strokeStyle="#1b263b"; ctx.beginPath(); ctx.moveTo(tx0,ty); ctx.lineTo(W-8,ty); ctx.stroke();
+    if (!S.history) S.history=[];
+    S.history.push(S.x);
+    if (S.history.length> tw) S.history.shift();
+    ctx.strokeStyle = glow; ctx.lineWidth=1.6; ctx.beginPath();
+    for (var i=0;i<S.history.length;i++){
+      var hx = tx0 + i;
+      var hy = ty - S.history[i]*pxScale*0.8;
+      if (i===0) ctx.moveTo(hx,hy); else ctx.lineTo(hx,hy);
+    }
+    ctx.stroke();
+    ctx.fillStyle="#9aa6b2"; ctx.font="11px Segoe UI";
+    ctx.fillText("x(t) 实时位移", tx0, restY-58);
+
+    // scene-specific flair
+    if (S.scene==="glass") drawGlass(nearRes, A);
+    if (S.scene==="bridge") drawBridgeTag(nearRes);
+
+    if (nearRes){
+      ctx.fillStyle="#ff9f59"; ctx.font="bold 14px Segoe UI";
+      ctx.fillText("共振！", baseX-22, 26);
+    }
+  }
+
+  function drawGlass(nearRes, A){
+    // a small wine glass icon top-right that cracks at high amplitude
+    var gx=W-70, gy=70;
+    ctx.save();
+    ctx.translate(gx,gy);
+    ctx.strokeStyle = nearRes? "#ff9f59":"#9aa6b2"; ctx.lineWidth=2;
+    var wobble = nearRes? Math.sin(S.t*18)*3 : 0;
+    ctx.beginPath();
+    ctx.moveTo(-16+wobble,-24); ctx.quadraticCurveTo(0,18,16-wobble,-24);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,6); ctx.lineTo(0,24); ctx.moveTo(-12,24); ctx.lineTo(12,24); ctx.stroke();
+    if (A>3 && nearRes){
+      ctx.strokeStyle="#ff7b7b"; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(-8,-20); ctx.lineTo(2,-6); ctx.lineTo(-4,-2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawBridgeTag(nearRes){
+    var gx=W-120, gy=60;
+    ctx.save(); ctx.translate(gx,gy);
+    ctx.strokeStyle= nearRes? "#ff9f59":"#9aa6b2"; ctx.lineWidth=2;
+    var tw=80, amp=nearRes? 8:2;
+    ctx.beginPath();
+    for (var i=0;i<=tw;i++){
+      var yy = Math.sin(i/tw*Math.PI*2 + S.t*4)*amp;
+      if (i===0) ctx.moveTo(i,yy); else ctx.lineTo(i,yy);
+    }
+    ctx.stroke();
+    ctx.fillStyle="#9aa6b2"; ctx.font="10px Segoe UI"; ctx.fillText("桥面扭转", 8, 22);
+    ctx.restore();
+  }
+
+  function drawCurve(){
+    cx.fillStyle = "#05101c";
+    cx.fillRect(0,0,CW,CH);
+    var padL=46, padR=16, padT=18, padB=30;
+    var plotW = CW-padL-padR, plotH = CH-padT-padB;
+    var wMax = 6;
+    // find peak amplitude over range for scaling
+    var aMax = 0, N=300, vals=[];
+    for (var i=0;i<=N;i++){
+      var w = wMax*i/N;
+      var a = amplitude(w, S.w0, S.beta, S.F);
+      vals.push(a);
+      if (a>aMax) aMax=a;
+    }
+    aMax = aMax*1.1 + 1e-6;
+
+    // axes
+    cx.strokeStyle="#274b63"; cx.lineWidth=1;
+    cx.beginPath(); cx.moveTo(padL,padT); cx.lineTo(padL,CH-padB); cx.lineTo(CW-padR,CH-padB); cx.stroke();
+    cx.fillStyle="#9aa6b2"; cx.font="11px Segoe UI";
+    cx.fillText("A", 8, padT+8);
+    cx.fillText("ω", CW-padR-8, CH-padB+20);
+    for (var g=1;g<=6;g++){
+      var gx = padL + plotW*(g/6);
+      cx.strokeStyle="#13212f"; cx.beginPath(); cx.moveTo(gx,padT); cx.lineTo(gx,CH-padB); cx.stroke();
+      cx.fillStyle="#5b6b7b"; cx.fillText(g.toFixed(0), gx-3, CH-padB+16);
+    }
+
+    // curve
+    cx.strokeStyle="#4cc9f0"; cx.lineWidth=2; cx.beginPath();
+    for (var k=0;k<=N;k++){
+      var px = padL + plotW*(k/N);
+      var py = (CH-padB) - plotH*(vals[k]/aMax);
+      if (k===0) cx.moveTo(px,py); else cx.lineTo(px,py);
+    }
+    cx.stroke();
+    // fill under curve
+    cx.lineTo(CW-padR, CH-padB); cx.lineTo(padL, CH-padB); cx.closePath();
+    cx.fillStyle="rgba(76,201,240,0.12)"; cx.fill();
+
+    // natural frequency marker
+    var w0x = padL + plotW*(S.w0/wMax);
+    cx.setLineDash([5,4]); cx.strokeStyle="rgba(255,209,102,0.7)";
+    cx.beginPath(); cx.moveTo(w0x,padT); cx.lineTo(w0x,CH-padB); cx.stroke();
+    cx.setLineDash([]);
+    cx.fillStyle="#ffd166"; cx.fillText("ω₀", w0x-6, padT+10);
+
+    // current omega marker
+    var aCur = amplitude(S.w, S.w0, S.beta, S.F);
+    var curX = padL + plotW*(S.w/wMax);
+    var curY = (CH-padB) - plotH*(Math.min(aCur,aMax)/aMax);
+    cx.strokeStyle="rgba(255,159,89,0.6)"; cx.lineWidth=1;
+    cx.beginPath(); cx.moveTo(curX,CH-padB); cx.lineTo(curX,curY); cx.stroke();
+    cx.beginPath(); cx.arc(curX,curY,6,0,Math.PI*2);
+    cx.fillStyle="#ff9f59"; cx.fill();
+    cx.strokeStyle="#fff"; cx.lineWidth=1.5; cx.stroke();
+  }
+
+  function updateStat(){
+    var A = amplitude(S.w, S.w0, S.beta, S.F);
+    var wr = Math.sqrt(Math.max(0, S.w0*S.w0 - 2*S.beta*S.beta));
+    var Q = S.w0/(2*S.beta);
+    var phi = Math.atan2(2*S.beta*S.w, (S.w0*S.w0 - S.w*S.w))*180/Math.PI;
+    stat.innerHTML =
+      "稳态振幅 A = <b>"+A.toFixed(2)+"</b><br>"+
+      "共振频率 ω_r = <b>"+wr.toFixed(2)+"</b>（峰值处）<br>"+
+      "品质因数 Q = ω₀/2β = <b>"+Q.toFixed(2)+"</b><br>"+
+      "相位滞后 φ = <b>"+phi.toFixed(0)+"°</b><br>"+
+      "频率比 ω/ω₀ = <b>"+(S.w/S.w0).toFixed(2)+"</b>";
+  }
+
+  function loop(){
+    if (!S.paused) integrate(0.05);
+    draw();
+    drawCurve();
+    requestAnimationFrame(loop);
+  }
+
+  wEl.addEventListener("input", function(){ S.w=+wEl.value; wVal.textContent=S.w.toFixed(2); updateStat(); });
+  w0El.addEventListener("input", function(){ S.w0=+w0El.value; w0Val.textContent=S.w0.toFixed(2); updateStat(); });
+  bEl.addEventListener("input", function(){ S.beta=+bEl.value; bVal.textContent=S.beta.toFixed(2); updateStat(); });
+  fEl.addEventListener("input", function(){ S.F=+fEl.value; fVal.textContent=S.F.toFixed(1); updateStat(); });
+
+  document.getElementById("snap").addEventListener("click", function(){
+    S.w = S.w0; wEl.value=S.w; wVal.textContent=S.w.toFixed(2);
+    hint.textContent="已将策动频率调到 ω=ω₀，观察振幅迅速增大（阻尼越小越夸张）。";
+    updateStat();
+  });
+  var pauseBtn = document.getElementById("pause");
+  pauseBtn.addEventListener("click", function(){
+    S.paused=!S.paused; pauseBtn.textContent=S.paused?"继续":"暂停";
+    pauseBtn.classList.toggle("active", S.paused);
+  });
+  var traceBtn = document.getElementById("trace");
+  traceBtn.classList.add("active");
+  traceBtn.addEventListener("click", function(){
+    S.trace=!S.trace; if(!S.trace) S.history=[];
+    traceBtn.classList.toggle("active", S.trace);
+  });
+  var chips = document.querySelectorAll(".chip");
+  for (var c=0;c<chips.length;c++){
+    chips[c].addEventListener("click", function(){ setScene(this.getAttribute("data-scene")); });
+  }
+
+  syncInputs();
+  updateStat();
+  loop();
+})();
+</script>
+</body>
+</html>
