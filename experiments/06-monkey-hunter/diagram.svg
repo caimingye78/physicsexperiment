@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" font-family="PingFang SC, Microsoft YaHei, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1b2a"/>
+      <stop offset="1" stop-color="#10243a"/>
+    </linearGradient>
+    <marker id="aim" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#4cc9f0"/>
+    </marker>
+    <marker id="grav" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#ff9a9a"/>
+    </marker>
+  </defs>
+
+  <rect width="720" height="400" fill="url(#sky)"/>
+  <rect y="400" width="720" height="60" fill="#16341f"/>
+  <line x1="0" y1="400" x2="720" y2="400" stroke="#274b63" stroke-width="2"/>
+
+  <text x="360" y="34" fill="#e0e1dd" font-size="22" font-weight="bold" text-anchor="middle">猎人射猴 · 抛体运动</text>
+  <text x="360" y="56" fill="#9aa6b2" font-size="13" text-anchor="middle">直瞄猴子开枪，猴子同时撒手下落，因二者竖直方向同样下沉 0.5·g·t²，飞镖必中</text>
+
+  <!-- hunter -->
+  <g transform="translate(70,360)">
+    <rect x="-8" y="-2" width="12" height="40" fill="#4a6fa5"/>
+    <circle cx="-2" cy="-12" r="8" fill="#e2c08d"/>
+    <rect x="-12" y="-20" width="20" height="4" fill="#2b3a4a"/>
+    <line x1="0" y1="0" x2="34" y2="-20" stroke="#cfd6dd" stroke-width="4"/>
+  </g>
+  <text x="70" y="392" fill="#9aa6b2" font-size="12" text-anchor="middle">猎人</text>
+
+  <!-- aim line from gun to monkey original position -->
+  <line x1="100" y1="345" x2="560" y2="140" stroke="#4cc9f0" stroke-width="1.5" stroke-dasharray="6 6" marker-end="url(#aim)"/>
+  <text x="300" y="232" fill="#4cc9f0" font-size="12" transform="rotate(-24 300 232)">瞄准线　tanθ = h/d</text>
+
+  <!-- tree -->
+  <g>
+    <rect x="552" y="150" width="16" height="250" fill="#5b3a1e"/>
+    <circle cx="560" cy="150" r="42" fill="#2f7d4f"/>
+    <circle cx="530" cy="170" r="32" fill="#2f7d4f"/>
+    <circle cx="590" cy="170" r="32" fill="#2f7d4f"/>
+    <line x1="560" y1="150" x2="534" y2="142" stroke="#5b3a1e" stroke-width="6"/>
+  </g>
+
+  <!-- monkey original (hanging) position, dashed -->
+  <g opacity="0.5">
+    <circle cx="560" cy="150" r="11" fill="#8a5a2b"/>
+    <circle cx="560" cy="134" r="9" fill="#8a5a2b"/>
+    <circle cx="560" cy="135" r="6" fill="#e2c08d"/>
+  </g>
+  <text x="600" y="138" fill="#9aa6b2" font-size="11">猴子初始位置</text>
+
+  <!-- monkey fallen position -->
+  <g>
+    <circle cx="560" cy="280" r="11" fill="#8a5a2b"/>
+    <circle cx="560" cy="264" r="9" fill="#8a5a2b"/>
+    <circle cx="560" cy="265" r="6" fill="#e2c08d"/>
+    <circle cx="557" cy="264" r="1.4" fill="#222"/>
+    <circle cx="563" cy="264" r="1.4" fill="#222"/>
+    <line x1="552" y1="274" x2="544" y2="266" stroke="#8a5a2b" stroke-width="3"/>
+    <line x1="568" y1="274" x2="576" y2="266" stroke="#8a5a2b" stroke-width="3"/>
+  </g>
+
+  <!-- monkey fall arrow -->
+  <line x1="560" y1="162" x2="560" y2="250" stroke="#ff9a9a" stroke-width="2" stroke-dasharray="3 4" marker-end="url(#grav)"/>
+  <text x="600" y="220" fill="#ff9a9a" font-size="11">下落 0.5·g·t²</text>
+
+  <!-- dart parabola trajectory -->
+  <path d="M100,345 Q330,150 560,280" fill="none" stroke="#ffd27f" stroke-width="2.5"/>
+  <!-- dart at impact -->
+  <g transform="translate(560,280)">
+    <line x1="-10" y1="0" x2="8" y2="0" stroke="#ffd27f" stroke-width="3"/>
+  </g>
+  <!-- impact burst -->
+  <g stroke="#ffd27f" stroke-width="2">
+    <line x1="560" y1="262" x2="560" y2="254"/>
+    <line x1="572" y1="268" x2="580" y2="262"/>
+    <line x1="548" y1="268" x2="540" y2="262"/>
+  </g>
+  <text x="345" y="200" fill="#ffd27f" font-size="12">飞镖抛物线轨迹</text>
+
+  <!-- dimension marks -->
+  <line x1="100" y1="418" x2="560" y2="418" stroke="#9aa6b2" stroke-width="1"/>
+  <text x="330" y="434" fill="#9aa6b2" font-size="12" text-anchor="middle">水平距离 d（飞镖：x = v·cosθ·t）</text>
+  <line x1="640" y1="150" x2="640" y2="400" stroke="#9aa6b2" stroke-width="1"/>
+  <text x="648" y="280" fill="#9aa6b2" font-size="12">高度 h</text>
+
+  <!-- formula -->
+  <text x="360" y="452" fill="#4cc9f0" font-size="13" text-anchor="middle">飞镖 y = v·sinθ·t − 0.5·g·t²　猴子 y = h − 0.5·g·t²　→ 同高相遇，必中</text>
+</svg>

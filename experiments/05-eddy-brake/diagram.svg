@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" font-family="PingFang SC, Microsoft YaHei, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7a4a1e"/>
+      <stop offset="0.5" stop-color="#d98a3d"/>
+      <stop offset="1" stop-color="#7a4a1e"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1b2a"/>
+      <stop offset="1" stop-color="#05101c"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#4cc9f0"/>
+    </marker>
+    <marker id="arrowG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#9aa6b2"/>
+    </marker>
+    <marker id="arrowY" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#ffd27f"/>
+    </marker>
+  </defs>
+
+  <rect width="720" height="460" fill="url(#bg)"/>
+  <text x="360" y="36" fill="#e0e1dd" font-size="22" font-weight="bold" text-anchor="middle">涡流制动 · 楞次定律</text>
+  <text x="360" y="58" fill="#9aa6b2" font-size="13" text-anchor="middle">磁铁穿过铜管时，涡流的磁场阻碍磁通量变化，产生与速度相反的制动力</text>
+
+  <!-- LEFT: free fall in air -->
+  <text x="180" y="92" fill="#9aa6b2" font-size="14" text-anchor="middle" font-weight="bold">空气中（自由下落）</text>
+  <line x1="180" y1="110" x2="180" y2="400" stroke="#1f2d40" stroke-width="2" stroke-dasharray="5 6"/>
+  <!-- magnet -->
+  <g>
+    <rect x="160" y="150" width="40" height="28" rx="5" fill="#d64545"/>
+    <rect x="160" y="178" width="40" height="28" rx="5" fill="#3a7bd5"/>
+    <text x="180" y="170" fill="#fff" font-size="13" text-anchor="middle" font-weight="bold">N</text>
+    <text x="180" y="198" fill="#fff" font-size="13" text-anchor="middle" font-weight="bold">S</text>
+  </g>
+  <!-- big velocity arrow -->
+  <line x1="222" y1="180" x2="222" y2="320" stroke="#9aa6b2" stroke-width="3" marker-end="url(#arrowG)"/>
+  <text x="232" y="300" fill="#9aa6b2" font-size="13">v 越来越大</text>
+  <text x="180" y="425" fill="#9aa6b2" font-size="12" text-anchor="middle">v = g·t（持续加速）</text>
+
+  <!-- RIGHT: copper tube -->
+  <text x="520" y="92" fill="#e0a060" font-size="14" text-anchor="middle" font-weight="bold">铜管中（涡流制动）</text>
+  <rect x="488" y="110" width="64" height="290" fill="url(#copper)" opacity="0.35"/>
+  <line x1="488" y1="110" x2="488" y2="400" stroke="#e0a060" stroke-width="4"/>
+  <line x1="552" y1="110" x2="552" y2="400" stroke="#e0a060" stroke-width="4"/>
+
+  <!-- eddy current rings -->
+  <ellipse cx="520" cy="200" rx="22" ry="7" fill="none" stroke="#ffd27f" stroke-width="2"/>
+  <ellipse cx="520" cy="280" rx="22" ry="7" fill="none" stroke="#ffd27f" stroke-width="2"/>
+  <path d="M540,196 q8,4 0,8" fill="none" stroke="#ffd27f" stroke-width="2" marker-end="url(#arrowY)"/>
+  <path d="M500,284 q-8,-4 0,-8" fill="none" stroke="#ffd27f" stroke-width="2" marker-end="url(#arrowY)"/>
+  <text x="586" y="204" fill="#ffd27f" font-size="11">涡流（上方排斥）</text>
+  <text x="586" y="284" fill="#ffd27f" font-size="11">涡流（下方吸引）</text>
+
+  <!-- magnet inside -->
+  <g>
+    <rect x="500" y="226" width="40" height="28" rx="5" fill="#d64545"/>
+    <rect x="500" y="254" width="40" height="28" rx="5" fill="#3a7bd5"/>
+    <text x="520" y="246" fill="#fff" font-size="13" text-anchor="middle" font-weight="bold">N</text>
+    <text x="520" y="274" fill="#fff" font-size="13" text-anchor="middle" font-weight="bold">S</text>
+  </g>
+  <!-- small velocity arrow + braking force -->
+  <line x1="566" y1="256" x2="566" y2="300" stroke="#4cc9f0" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="574" y="292" fill="#4cc9f0" font-size="12">v 小（匀速）</text>
+  <line x1="476" y1="290" x2="476" y2="246" stroke="#d64545" stroke-width="3" marker-end="url(#arrowG)"/>
+  <text x="404" y="270" fill="#d64545" font-size="12">阻力 k·v</text>
+  <text x="520" y="425" fill="#e0a060" font-size="12" text-anchor="middle">趋于终极速度 v_term = m·g/k</text>
+
+  <!-- formula box -->
+  <rect x="60" y="440" width="600" height="0.5" fill="none"/>
+  <text x="360" y="452" fill="#4cc9f0" font-size="13" text-anchor="middle">运动方程：m·dv/dt = m·g − k·v　　解：v(t) = v_term·(1 − e^(−k·t/m))</text>
+</svg>

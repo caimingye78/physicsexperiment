@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>克拉尼图形 · 振动方板的节线</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .layout{display:flex;gap:18px;flex-wrap:wrap;}
+  .stage{flex:1 1 420px;min-width:320px;}
+  .side{flex:0 0 300px;min-width:260px;}
+  .panel{background:var(--panel);border:1px solid #2a3a52;border-radius:12px;
+    padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  canvas{display:block;width:100%;border-radius:12px;background:#05101c;
+    border:1px solid #2a3a52;}
+  .row{margin:12px 0;}
+  .row label{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--muted);margin-bottom:6px;}
+  .row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#274b63);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  button{background:#274b63;color:var(--ink);border:1px solid var(--accent);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accent);color:#05101c;}
+  button.active{background:var(--accent);color:#05101c;}
+  .formula{background:#05101c;border:1px dashed var(--accent);border-radius:10px;
+    padding:12px;font-size:13px;line-height:1.7;color:var(--ink);}
+  .formula code{color:var(--accent);}
+  .stat{font-size:13px;color:var(--muted);line-height:1.7;}
+  .stat b{color:var(--ink);}
+  .chip{display:inline-block;background:#05101c;border:1px solid #2a3a52;border-radius:20px;
+    padding:3px 10px;margin:2px 4px 2px 0;font-size:12px;color:var(--accent);cursor:pointer;}
+  .chip:hover{background:var(--accent);color:#05101c;}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>克拉尼图形 <span class="en">Chladni Plate</span></h1>
+  <p class="intro">在振动的方板上撒沙，沙粒会聚集到不动的节线上，画出由振动模式 (m, n) 决定的美丽图案。</p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="panel">
+        <canvas id="cv" width="640" height="640"></canvas>
+        <div class="hint" id="hint">提示：拖动滑块改变模式，沙粒会重新聚集到新的节线。</div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="row">
+          <label>模式数 m <b id="mVal">3</b></label>
+          <input type="range" id="m" min="1" max="6" step="1" value="3">
+        </div>
+        <div class="row">
+          <label>模式数 n <b id="nVal">2</b></label>
+          <input type="range" id="n" min="1" max="6" step="1" value="2">
+        </div>
+        <div class="row">
+          <label>对比度 / 沙量 <b id="cVal">1.6</b></label>
+          <input type="range" id="contrast" min="0.4" max="4" step="0.1" value="1.6">
+        </div>
+        <div class="btns">
+          <button id="shake">撒沙 / 重振</button>
+          <button id="pause">暂停</button>
+          <button id="colorBtn">铜板色</button>
+        </div>
+        <div class="hint">快捷模式：
+          <span class="chip" data-m="2" data-n="1">2,1</span>
+          <span class="chip" data-m="3" data-n="2">3,2</span>
+          <span class="chip" data-m="4" data-n="3">4,3</span>
+          <span class="chip" data-m="5" data-n="2">5,2</span>
+          <span class="chip" data-m="6" data-n="5">6,5</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stat" id="stat"></div>
+      </div>
+
+      <div class="panel">
+        <div class="formula">
+          驻波场：<br>
+          <code>f(x,y) = cos(m·π·x)·cos(n·π·y) − cos(n·π·x)·cos(m·π·y)</code><br><br>
+          沙粒聚集在 <code>|f| ≈ 0</code> 的节线处。<br>
+          模式数 (m, n) 越大 → 频率越高 → 图案越细密。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+
+  var mEl = document.getElementById("m");
+  var nEl = document.getElementById("n");
+  var cEl = document.getElementById("contrast");
+  var mVal = document.getElementById("mVal");
+  var nVal = document.getElementById("nVal");
+  var cVal = document.getElementById("cVal");
+  var stat = document.getElementById("stat");
+  var hint = document.getElementById("hint");
+
+  var state = {
+    m: 3, n: 2, contrast: 1.6,
+    paused: false, copper: false, phase: 0
+  };
+
+  // Sand particles in unit square [0,1]x[0,1]
+  var N = 4500;
+  var sand = new Float32Array(N * 2);
+  function scatter(){
+    for (var i=0;i<N;i++){
+      sand[i*2]   = Math.random();
+      sand[i*2+1] = Math.random();
+    }
+  }
+  scatter();
+
+  function field(x, y, m, n){
+    var pi = Math.PI;
+    return Math.cos(m*pi*x)*Math.cos(n*pi*y) - Math.cos(n*pi*x)*Math.cos(m*pi*y);
+  }
+
+  // gradient of |f| approximated numerically -> push sand toward node
+  function step(){
+    var m = state.m, n = state.n;
+    var h = 0.004;
+    var amp = 1 + 0.4*Math.sin(state.phase); // vibration breathing
+    for (var i=0;i<N;i++){
+      var x = sand[i*2], y = sand[i*2+1];
+      var f = field(x,y,m,n);
+      var fa = Math.abs(f);
+      // numerical gradient of |f|
+      var gx = (Math.abs(field(x+h,y,m,n)) - Math.abs(field(x-h,y,m,n)))/(2*h);
+      var gy = (Math.abs(field(x,y+h,m,n)) - Math.abs(field(x,y-h,m,n)))/(2*h);
+      var gmag = Math.sqrt(gx*gx+gy*gy) + 1e-6;
+      // move down the gradient toward |f|=0
+      var rate = 0.06 * amp;
+      x -= rate * gx/gmag * Math.min(fa,0.6);
+      y -= rate * gy/gmag * Math.min(fa,0.6);
+      // jitter proportional to local vibration (away from node = more shaking)
+      var jitter = 0.010 * fa * amp;
+      x += (Math.random()-0.5)*jitter;
+      y += (Math.random()-0.5)*jitter;
+      // clamp inside plate
+      if (x<0.005) x=0.005; if (x>0.995) x=0.995;
+      if (y<0.005) y=0.005; if (y>0.995) y=0.995;
+      sand[i*2]=x; sand[i*2+1]=y;
+    }
+    state.phase += 0.05;
+  }
+
+  function draw(){
+    // plate background
+    if (state.copper){
+      var g = ctx.createRadialGradient(W/2,H/2,40,W/2,H/2,W*0.7);
+      g.addColorStop(0,"#3a2a14");
+      g.addColorStop(1,"#120a04");
+      ctx.fillStyle = g;
+    } else {
+      ctx.fillStyle = "#05101c";
+    }
+    ctx.fillRect(0,0,W,H);
+
+    // faint nodal-line guide
+    var m=state.m, n=state.n;
+    var img = ctx.getImageData(0,0,1,1); // noop to keep ctx warm
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = state.copper ? "#e0a060" : "#274b63";
+    ctx.lineWidth = 1;
+    // draw approximate node contour by sampling sign changes on grid
+    var G = 90;
+    for (var i=0;i<G;i++){
+      for (var j=0;j<G;j++){
+        var x=i/G, y=j/G;
+        var f00=field(x,y,m,n), f10=field(x+1/G,y,m,n), f01=field(x,y+1/G,m,n);
+        if (f00*f10<0 || f00*f01<0){
+          ctx.fillStyle = state.copper ? "#e0a060" : "#274b63";
+          ctx.fillRect(x*W, y*H, 2, 2);
+        }
+      }
+    }
+    ctx.restore();
+
+    // sand
+    var col = state.copper ? "#fff4e0" : "#e0e1dd";
+    ctx.fillStyle = col;
+    var r = 1.1;
+    for (var k=0;k<N;k++){
+      var px = sand[k*2]*W, py = sand[k*2+1]*H;
+      ctx.fillRect(px, py, r+0.6, r+0.6);
+    }
+
+    // border frame
+    ctx.strokeStyle = state.copper ? "#e0a060" : "#4cc9f0";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5,1.5,W-3,H-3);
+
+    // mode label
+    ctx.fillStyle = "rgba(76,201,240,0.9)";
+    ctx.font = "16px Segoe UI, sans-serif";
+    ctx.fillText("(m, n) = ("+m+", "+n+")", 16, 28);
+  }
+
+  function loop(){
+    if (!state.paused) step();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function updateStat(){
+    var m=state.m,n=state.n;
+    var freq = Math.sqrt(m*m+n*n);
+    stat.innerHTML =
+      "当前模式：<b>("+m+", "+n+")</b><br>"+
+      "相对频率 ∝ √(m²+n²) = <b>"+freq.toFixed(2)+"</b><br>"+
+      "对比度：<b>"+state.contrast.toFixed(1)+"</b><br>"+
+      "节线越多代表板振动得越快、能量越高。";
+  }
+
+  mEl.addEventListener("input", function(){
+    state.m = +mEl.value; mVal.textContent = state.m; updateStat();
+  });
+  nEl.addEventListener("input", function(){
+    state.n = +nEl.value; nVal.textContent = state.n; updateStat();
+  });
+  cEl.addEventListener("input", function(){
+    state.contrast = +cEl.value; cVal.textContent = state.contrast.toFixed(1);
+  });
+  document.getElementById("shake").addEventListener("click", function(){
+    scatter(); hint.textContent = "撒沙完成！沙粒正重新聚集到节线…";
+  });
+  var pauseBtn = document.getElementById("pause");
+  pauseBtn.addEventListener("click", function(){
+    state.paused = !state.paused;
+    pauseBtn.textContent = state.paused ? "继续" : "暂停";
+    pauseBtn.classList.toggle("active", state.paused);
+  });
+  var colorBtn = document.getElementById("colorBtn");
+  colorBtn.addEventListener("click", function(){
+    state.copper = !state.copper;
+    colorBtn.textContent = state.copper ? "深色板" : "铜板色";
+    colorBtn.classList.toggle("active", state.copper);
+  });
+  var chips = document.querySelectorAll(".chip");
+  for (var c=0;c<chips.length;c++){
+    chips[c].addEventListener("click", function(){
+      var cm = +this.getAttribute("data-m");
+      var cn = +this.getAttribute("data-n");
+      state.m=cm; state.n=cn;
+      mEl.value=cm; nEl.value=cn; mVal.textContent=cm; nVal.textContent=cn;
+      scatter(); updateStat();
+    });
+  }
+
+  updateStat();
+  loop();
+})();
+</script>
+</body>
+</html>

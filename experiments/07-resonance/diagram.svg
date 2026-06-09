@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1b2a"/>
+      <stop offset="1" stop-color="#0a1622"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#ffd166"/>
+    </marker>
+    <marker id="ax" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#9aa6b2"/>
+    </marker>
+  </defs>
+
+  <rect width="760" height="460" fill="url(#bg)"/>
+  <text x="30" y="40" fill="#e0e1dd" font-size="22" font-weight="bold">受迫振动与共振</text>
+  <text x="30" y="64" fill="#4cc9f0" font-size="14">x'' + 2&#183;&#946;&#183;x' + &#969;&#8320;&#178;&#183;x = F&#183;cos(&#969;t)</text>
+
+  <!-- Left: spring-mass system -->
+  <g transform="translate(0,30)">
+    <!-- wall -->
+    <rect x="40" y="120" width="18" height="120" fill="#274b63"/>
+    <g fill="#1b263b">
+      <rect x="24" y="120" width="16" height="14"/>
+      <rect x="24" y="140" width="16" height="14"/>
+      <rect x="24" y="160" width="16" height="14"/>
+      <rect x="24" y="180" width="16" height="14"/>
+      <rect x="24" y="200" width="16" height="14"/>
+      <rect x="24" y="220" width="16" height="14"/>
+    </g>
+    <!-- spring -->
+    <polyline points="58,180 78,180 90,162 108,198 126,162 144,198 162,162 180,198 198,180 220,180"
+      fill="none" stroke="#4cc9f0" stroke-width="3"/>
+    <!-- ground -->
+    <line x1="40" y1="232" x2="320" y2="232" stroke="#1b263b" stroke-width="2"/>
+    <!-- mass -->
+    <rect x="220" y="152" width="58" height="58" rx="6" fill="#e0e1dd" stroke="#4cc9f0" stroke-width="3"/>
+    <text x="249" y="187" fill="#05101c" font-size="16" text-anchor="middle">m</text>
+    <!-- driving force -->
+    <line x1="249" y1="132" x2="315" y2="132" stroke="#ffd166" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="252" y="122" fill="#ffd166" font-size="13">F&#183;cos(&#969;t)</text>
+    <!-- amplitude guides -->
+    <line x1="200" y1="220" x2="200" y2="250" stroke="#9aa6b2" stroke-width="1" stroke-dasharray="4 4"/>
+    <line x1="298" y1="220" x2="298" y2="250" stroke="#9aa6b2" stroke-width="1" stroke-dasharray="4 4"/>
+    <line x1="200" y1="245" x2="298" y2="245" stroke="#9aa6b2" stroke-width="1" marker-start="url(#ax)" marker-end="url(#ax)"/>
+    <text x="232" y="262" fill="#9aa6b2" font-size="12">振幅 2A</text>
+    <text x="60" y="300" fill="#9aa6b2" font-size="13">弹簧振子：固有频率 &#969;&#8320; = sqrt(k/m)</text>
+  </g>
+
+  <!-- Right: resonance curve -->
+  <g transform="translate(400,90)">
+    <text x="0" y="-10" fill="#e0e1dd" font-size="15" font-weight="bold">共振曲线 A(&#969;)</text>
+    <!-- axes -->
+    <line x1="20" y1="20" x2="20" y2="250" stroke="#9aa6b2" stroke-width="1.5" marker-end="url(#ax)"/>
+    <line x1="20" y1="250" x2="330" y2="250" stroke="#9aa6b2" stroke-width="1.5" marker-end="url(#ax)"/>
+    <text x="2" y="16" fill="#9aa6b2" font-size="13">A</text>
+    <text x="335" y="254" fill="#9aa6b2" font-size="13">&#969;</text>
+
+    <!-- low damping peak (sharp) -->
+    <path d="M20,242 C120,236 165,40 185,40 C205,40 250,236 330,244" fill="none" stroke="#4cc9f0" stroke-width="2.5"/>
+    <!-- high damping (broad) -->
+    <path d="M20,240 C110,224 165,150 185,150 C205,150 260,224 330,242" fill="none" stroke="#5b7a8c" stroke-width="2" stroke-dasharray="5 4"/>
+
+    <!-- natural freq marker -->
+    <line x1="185" y1="30" x2="185" y2="250" stroke="#ffd166" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="172" y="26" fill="#ffd166" font-size="12">&#969;&#8320;</text>
+
+    <!-- current omega marker -->
+    <circle cx="185" cy="40" r="6" fill="#ff9f59" stroke="#fff" stroke-width="1.5"/>
+    <text x="195" y="40" fill="#ff9f59" font-size="12">共振峰</text>
+
+    <text x="40" y="120" fill="#4cc9f0" font-size="12">小阻尼 &#946; 小 &#8594; 峰高而尖</text>
+    <text x="60" y="200" fill="#5b7a8c" font-size="12">大阻尼 &#946; 大 &#8594; 峰低而宽</text>
+  </g>
+
+  <text x="30" y="430" fill="#9aa6b2" font-size="13">稳态振幅 A = F / sqrt((&#969;&#8320;&#178; &#8722; &#969;&#178;)&#178; + (2&#183;&#946;&#183;&#969;)&#178;)，共振峰位于 &#969; &#8776; sqrt(&#969;&#8320;&#178; &#8722; 2&#946;&#178;)。实例：塔科马大桥、高脚杯、荡秋千。</text>
+</svg>

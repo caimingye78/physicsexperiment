@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双缝干涉 · 杨氏实验</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .layout{display:flex;gap:18px;flex-wrap:wrap;}
+  .stage{flex:1 1 460px;min-width:340px;}
+  .side{flex:0 0 300px;min-width:260px;}
+  .panel{background:var(--panel);border:1px solid #2a3a52;border-radius:12px;
+    padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  canvas{display:block;width:100%;border-radius:10px;background:#05101c;
+    border:1px solid #2a3a52;margin-bottom:10px;}
+  .row{margin:12px 0;}
+  .row label{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--muted);margin-bottom:6px;}
+  .row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#274b63);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  button{background:#274b63;color:var(--ink);border:1px solid var(--accent);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accent);color:#05101c;}
+  button.active{background:var(--accent);color:#05101c;}
+  .formula{background:#05101c;border:1px dashed var(--accent);border-radius:10px;
+    padding:12px;font-size:13px;line-height:1.7;}
+  .formula code{color:var(--accent);}
+  .stat{font-size:13px;color:var(--muted);line-height:1.7;}
+  .stat b{color:var(--ink);}
+  .swatch{display:inline-block;width:14px;height:14px;border-radius:3px;
+    vertical-align:middle;margin-right:6px;border:1px solid #2a3a52;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>双缝干涉 <span class="en">Double-Slit Interference</span></h1>
+  <p class="intro">两束相干光在屏上叠加，形成明暗相间的条纹——光的波动性最经典的证据。</p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="panel">
+        <canvas id="screen" width="660" height="90"></canvas>
+        <canvas id="curve" width="660" height="240"></canvas>
+        <canvas id="setup" width="660" height="170"></canvas>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="row">
+          <label>缝间距 d <b id="dVal">0.20 mm</b></label>
+          <input type="range" id="d" min="0.05" max="0.60" step="0.01" value="0.20">
+        </div>
+        <div class="row">
+          <label>缝宽 a <b id="aVal">0.06 mm</b></label>
+          <input type="range" id="a" min="0.02" max="0.20" step="0.005" value="0.06">
+        </div>
+        <div class="row">
+          <label>波长 λ <b id="lVal">550 nm</b></label>
+          <input type="range" id="lambda" min="400" max="700" step="5" value="550">
+        </div>
+        <div class="row">
+          <label>屏距 L <b id="LVal">1.0 m</b></label>
+          <input type="range" id="L" min="0.5" max="2.5" step="0.05" value="1.0">
+        </div>
+        <div class="btns">
+          <button id="envBtn" class="active">显示单缝包络</button>
+          <button id="whiteBtn">白光模式</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stat" id="stat"></div>
+      </div>
+
+      <div class="panel">
+        <div class="formula">
+          双缝干涉强度：<br>
+          <code>I = I0 · cos^2(pi*d*sinθ/λ)</code><br>
+          受单缝衍射包络调制：<br>
+          <code>× sinc^2(pi*a*sinθ/λ)</code><br><br>
+          条纹间距：<code>Δy ≈ λ·L / d</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var screenCv = document.getElementById("screen");
+  var curveCv = document.getElementById("curve");
+  var setupCv = document.getElementById("setup");
+  var sx = screenCv.getContext("2d");
+  var cx = curveCv.getContext("2d");
+  var px = setupCv.getContext("2d");
+
+  var els = {
+    d: document.getElementById("d"),
+    a: document.getElementById("a"),
+    lambda: document.getElementById("lambda"),
+    L: document.getElementById("L")
+  };
+  var vals = {
+    d: document.getElementById("dVal"),
+    a: document.getElementById("aVal"),
+    lambda: document.getElementById("lVal"),
+    L: document.getElementById("LVal")
+  };
+  var stat = document.getElementById("stat");
+
+  var state = { showEnv: true, white: false };
+
+  // wavelength (nm) -> approximate RGB
+  function waveToRGB(wl){
+    var r=0,g=0,b=0;
+    if (wl>=380 && wl<440){ r=-(wl-440)/(440-380); g=0; b=1; }
+    else if (wl<490){ r=0; g=(wl-440)/(490-440); b=1; }
+    else if (wl<510){ r=0; g=1; b=-(wl-510)/(510-490); }
+    else if (wl<580){ r=(wl-510)/(580-510); g=1; b=0; }
+    else if (wl<645){ r=1; g=-(wl-645)/(645-580); b=0; }
+    else if (wl<=780){ r=1; g=0; b=0; }
+    var f=1;
+    if (wl<420) f=0.3+0.7*(wl-380)/(420-380);
+    else if (wl>700) f=0.3+0.7*(780-wl)/(780-700);
+    return [Math.round(255*Math.pow(r*f,0.8)),
+            Math.round(255*Math.pow(g*f,0.8)),
+            Math.round(255*Math.pow(b*f,0.8))];
+  }
+
+  function sinc2(u){
+    if (Math.abs(u) < 1e-9) return 1;
+    var s = Math.sin(u)/u;
+    return s*s;
+  }
+
+  // intensity at screen position y (meters), wavelength wl (m)
+  function intensity(y, wl, d, a, L){
+    var sinT = y / Math.sqrt(y*y + L*L);
+    var pi = Math.PI;
+    var inter = Math.cos(pi*d*sinT/wl);
+    var I = inter*inter;
+    if (state.showEnv){
+      I *= sinc2(pi*a*sinT/wl);
+    }
+    return I;
+  }
+
+  function readParams(){
+    return {
+      d: +els.d.value / 1000,         // mm -> m
+      a: +els.a.value / 1000,         // mm -> m
+      wl: +els.lambda.value * 1e-9,   // nm -> m
+      L: +els.L.value                 // m
+    };
+  }
+
+  var halfSpan = 0.02; // +/- 20 mm of screen shown
+
+  function render(){
+    var p = readParams();
+    var Wp = curveCv.width, Hp = curveCv.height;
+    var Ws = screenCv.width;
+
+    // ---- screen strip ----
+    var imgEl = sx.createImageData(Ws, screenCv.height);
+    var data = imgEl.data;
+    var baseRGB = state.white ? null : waveToRGB(+els.lambda.value);
+    for (var i=0;i<Ws;i++){
+      var y = (i/(Ws-1) - 0.5) * 2 * halfSpan;
+      var r=0,g=0,b=0;
+      if (state.white){
+        // sum a few wavelengths for white-light fringes
+        var wls = [430,480,530,580,630,680];
+        for (var w=0; w<wls.length; w++){
+          var I = intensity(y, wls[w]*1e-9, p.d, p.a, p.L);
+          var rgb = waveToRGB(wls[w]);
+          r += I*rgb[0]; g += I*rgb[1]; b += I*rgb[2];
+        }
+        r/=wls.length; g/=wls.length; b/=wls.length;
+        r*=2.2; g*=2.2; b*=2.2;
+      } else {
+        var I2 = intensity(y, p.wl, p.d, p.a, p.L);
+        r = baseRGB[0]*I2; g = baseRGB[1]*I2; b = baseRGB[2]*I2;
+      }
+      for (var row=0; row<screenCv.height; row++){
+        var idx = (row*Ws + i)*4;
+        data[idx]   = Math.min(255,r);
+        data[idx+1] = Math.min(255,g);
+        data[idx+2] = Math.min(255,b);
+        data[idx+3] = 255;
+      }
+    }
+    sx.putImageData(imgEl,0,0);
+    sx.fillStyle = "rgba(224,225,221,0.8)";
+    sx.font = "12px Segoe UI, sans-serif";
+    sx.fillText("屏上条纹", 8, 16);
+
+    // ---- intensity curve ----
+    cx.fillStyle = "#05101c";
+    cx.fillRect(0,0,Wp,Hp);
+    // grid
+    cx.strokeStyle = "#1b263b"; cx.lineWidth = 1;
+    for (var gx=0; gx<=10; gx++){
+      var X = gx/10*Wp;
+      cx.beginPath(); cx.moveTo(X,0); cx.lineTo(X,Hp); cx.stroke();
+    }
+    cx.beginPath(); cx.moveTo(Wp/2,0); cx.lineTo(Wp/2,Hp);
+    cx.strokeStyle="#274b63"; cx.lineWidth=1.5; cx.stroke();
+
+    // envelope (single-slit) dashed
+    if (state.showEnv && !state.white){
+      cx.strokeStyle = "rgba(154,166,178,0.7)";
+      cx.setLineDash([5,4]); cx.lineWidth = 1.4;
+      cx.beginPath();
+      for (var e=0;e<Wp;e++){
+        var ye = (e/(Wp-1)-0.5)*2*halfSpan;
+        var sinE = ye/Math.sqrt(ye*ye+p.L*p.L);
+        var env = sinc2(Math.PI*p.a*sinE/p.wl);
+        var Y = Hp - env*(Hp-20) - 8;
+        if (e===0) cx.moveTo(e,Y); else cx.lineTo(e,Y);
+      }
+      cx.stroke(); cx.setLineDash([]);
+    }
+
+    // main intensity curve
+    var lineRGB = state.white ? [224,225,221] : waveToRGB(+els.lambda.value);
+    cx.strokeStyle = "rgb("+lineRGB[0]+","+lineRGB[1]+","+lineRGB[2]+")";
+    cx.lineWidth = 2;
+    cx.beginPath();
+    for (var c=0;c<Wp;c++){
+      var yc = (c/(Wp-1)-0.5)*2*halfSpan;
+      var Ic;
+      if (state.white){
+        Ic = intensity(yc, 0.55e-6, p.d, p.a, p.L); // representative
+      } else {
+        Ic = intensity(yc, p.wl, p.d, p.a, p.L);
+      }
+      var Yc = Hp - Ic*(Hp-20) - 8;
+      if (c===0) cx.moveTo(c,Yc); else cx.lineTo(c,Yc);
+    }
+    cx.stroke();
+    cx.fillStyle = "rgba(224,225,221,0.8)";
+    cx.font = "12px Segoe UI, sans-serif";
+    cx.fillText("强度 I vs 屏上位置 y（中央 → 两侧 ±20mm）", 8, 16);
+
+    // ---- setup schematic ----
+    drawSetup(p);
+
+    // ---- stats ----
+    var dy = p.wl * p.L / p.d * 1000; // mm
+    stat.innerHTML =
+      "<span class='swatch' style='background:rgb("+lineRGB[0]+","+lineRGB[1]+","+lineRGB[2]+")'></span>"+
+      (state.white ? "白光" : (+els.lambda.value)+" nm")+"<br>"+
+      "条纹间距 Δy ≈ λ·L/d = <b>"+dy.toFixed(2)+" mm</b><br>"+
+      "缝间距 d = <b>"+(p.d*1000).toFixed(2)+" mm</b>，缝宽 a = <b>"+(p.a*1000).toFixed(3)+" mm</b><br>"+
+      "包络下可见亮纹数 ≈ <b>"+Math.max(1,Math.round(p.d/p.a*2-1))+"</b> 条";
+  }
+
+  function drawSetup(p){
+    var W = setupCv.width, H = setupCv.height;
+    px.fillStyle = "#05101c"; px.fillRect(0,0,W,H);
+    var rgb = state.white ? [224,225,221] : waveToRGB(+els.lambda.value);
+    var col = "rgb("+rgb[0]+","+rgb[1]+","+rgb[2]+")";
+
+    // source
+    px.fillStyle = col;
+    px.beginPath(); px.arc(40, H/2, 8, 0, Math.PI*2); px.fill();
+    px.fillStyle="#9aa6b2"; px.font="11px Segoe UI"; px.fillText("光源", 24, H/2+26);
+
+    // double slit barrier
+    var bx = 230;
+    px.fillStyle = "#1b263b";
+    px.fillRect(bx-6, 10, 12, H-20);
+    var cyA = H/2 - 14, cyB = H/2 + 14;
+    px.clearRect(bx-6, cyA-3, 12, 6);
+    px.clearRect(bx-6, cyB-3, 12, 6);
+    px.fillStyle = "#05101c";
+    px.fillRect(bx-6, cyA-3, 12, 6);
+    px.fillRect(bx-6, cyB-3, 12, 6);
+    px.strokeStyle="#4cc9f0"; px.lineWidth=1;
+    px.strokeRect(bx-6, cyA-3, 12, 6);
+    px.strokeRect(bx-6, cyB-3, 12, 6);
+    px.fillStyle="#9aa6b2"; px.fillText("双缝", bx-12, H-6);
+
+    // incoming rays
+    px.strokeStyle = col; px.lineWidth=1.2; px.globalAlpha=0.7;
+    px.beginPath(); px.moveTo(48,H/2); px.lineTo(bx-6,cyA); px.stroke();
+    px.beginPath(); px.moveTo(48,H/2); px.lineTo(bx-6,cyB); px.stroke();
+
+    // spreading wavefronts (circular arcs) from each slit
+    px.globalAlpha=0.5;
+    for (var k=1;k<=6;k++){
+      px.beginPath(); px.arc(bx, cyA, k*22, -Math.PI/2.4, Math.PI/2.4); px.stroke();
+      px.beginPath(); px.arc(bx, cyB, k*22, -Math.PI/2.4, Math.PI/2.4); px.stroke();
+    }
+    px.globalAlpha=1;
+
+    // screen
+    var scx = W-30;
+    px.fillStyle = "#274b63"; px.fillRect(scx, 10, 8, H-20);
+    px.fillStyle="#9aa6b2"; px.fillText("屏", scx-4, H-6);
+
+    // L label
+    px.strokeStyle="#9aa6b2"; px.setLineDash([3,3]); px.globalAlpha=0.6;
+    px.beginPath(); px.moveTo(bx, H-18); px.lineTo(scx, H-18); px.stroke();
+    px.setLineDash([]); px.globalAlpha=1;
+    px.fillStyle="#9aa6b2"; px.fillText("L = "+(+els.L.value).toFixed(2)+" m", (bx+scx)/2-30, H-22);
+  }
+
+  function bind(key, fmt){
+    els[key].addEventListener("input", function(){
+      vals[key].textContent = fmt(+els[key].value);
+      render();
+    });
+  }
+  bind("d", function(v){ return v.toFixed(2)+" mm"; });
+  bind("a", function(v){ return v.toFixed(3)+" mm"; });
+  bind("lambda", function(v){ return v+" nm"; });
+  bind("L", function(v){ return v.toFixed(2)+" m"; });
+
+  var envBtn = document.getElementById("envBtn");
+  envBtn.addEventListener("click", function(){
+    state.showEnv = !state.showEnv;
+    envBtn.textContent = state.showEnv ? "显示单缝包络" : "隐藏单缝包络";
+    envBtn.classList.toggle("active", state.showEnv);
+    render();
+  });
+  var whiteBtn = document.getElementById("whiteBtn");
+  whiteBtn.addEventListener("click", function(){
+    state.white = !state.white;
+    whiteBtn.textContent = state.white ? "单色模式" : "白光模式";
+    whiteBtn.classList.toggle("active", state.white);
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

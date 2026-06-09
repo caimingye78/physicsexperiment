@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>气体动理论 · 互动模拟</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px 18px 48px;}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:1px;}
+  h1 .en{color:var(--accent);font-size:15px;font-weight:400;margin-left:8px;}
+  .intro{color:var(--muted);font-size:14px;margin:0 0 18px;}
+  .stage{display:flex;gap:18px;flex-wrap:wrap;}
+  .canvas-card{background:var(--panel);border-radius:14px;padding:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);flex:1 1 560px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#08121e;}
+  #hist{margin-top:12px;}
+  .side{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:14px;}
+  .panel{background:var(--panel);border-radius:14px;padding:16px 18px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);}
+  .panel h2{font-size:15px;margin:0 0 12px;color:var(--accent);letter-spacing:.5px;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--muted);}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),#7b9acc);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+    border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  button{background:#16314d;color:var(--ink);border:1px solid #2c476a;
+    padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s;}
+  button:hover{background:var(--accent);color:#08121e;}
+  button.on{background:var(--accent);color:#08121e;}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat{background:#11233a;border-radius:10px;padding:10px 12px;text-align:center;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .stat.p .v{color:#ff8e72;}
+  .stat.t .v{color:#ffd166;}
+  .stat.pv .v{color:#7ee0ff;}
+  .stat.n .v{color:#b9f6a5;}
+  .formula{background:#11233a;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;}
+  .formula code{color:var(--accent);font-size:14px;}
+  .legend{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px;}
+  .legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+  footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>气体动理论<span class="en">Kinetic Theory of Gases</span></h1>
+  <p class="intro">无数小球在盒中弹性碰撞，速率自发趋向麦克斯韦分布——这就是温度与压强的微观本质。</p>
+
+  <div class="stage">
+    <div class="canvas-card">
+      <canvas id="cv" width="640" height="460"></canvas>
+      <canvas id="hist" width="640" height="170"></canvas>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h2>控制面板</h2>
+        <div class="ctrl">
+          <label>粒子数 N <b><span id="nVal">200</span></b></label>
+          <input type="range" id="n" min="20" max="500" value="200" step="10">
+        </div>
+        <div class="ctrl">
+          <label>温度 T <b><span id="tVal">300</span> K</b></label>
+          <input type="range" id="t" min="50" max="900" value="300" step="10">
+        </div>
+        <div class="ctrl">
+          <label>体积 V（右壁位置）<b><span id="vVal">100</span>%</b></label>
+          <input type="range" id="v" min="45" max="100" value="100" step="1">
+        </div>
+        <div class="btns">
+          <button id="play" class="on">暂停</button>
+          <button id="reset">重置</button>
+          <button id="heat">瞬间加热</button>
+          <button id="cool">瞬间冷却</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>实时测量</h2>
+        <div class="readout">
+          <div class="stat n"><div class="k">粒子数 N</div><div class="v"><span id="oN">200</span></div></div>
+          <div class="stat t"><div class="k">实测温度 T</div><div class="v"><span id="oT">—</span></div></div>
+          <div class="stat p"><div class="k">压强 P（撞墙率）</div><div class="v"><span id="oP">—</span></div></div>
+          <div class="stat pv"><div class="k">P · V / (N·T)</div><div class="v"><span id="oPV">—</span></div></div>
+        </div>
+        <div class="legend">
+          P·V/(N·T) 在不同 N、T、V 下应近似恒定，即验证理想气体状态方程。
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>公式</h2>
+        <div class="formula">
+          状态方程：<code>P &middot; V = N &middot; k &middot; T</code><br>
+          平均平动动能：<code>(1/2) m &lt;v&sup2;&gt; = (3/2) k T</code>（三维）<br>
+          本模拟为二维：<code>(1/2) m &lt;v&sup2;&gt; = k T</code><br>
+          麦克斯韦分布（2D）：<code>f(v) &prop; v &middot; exp(-m v&sup2; / 2kT)</code><br>
+          蓝色直方图为实时速率分布，黄线为理论曲线。
+        </div>
+        <div class="legend">
+          <span class="dot" style="background:#4cc9f0"></span>气体粒子　
+          <span class="dot" style="background:#ffd166"></span>麦克斯韦理论曲线
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>高中物理互动演示 · 纯离线运行 · 无外部依赖</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  var hcv = document.getElementById("hist");
+  var hctx = hcv.getContext("2d");
+  var HW = hcv.width, HH = hcv.height;
+
+  // 物理参数（采用模拟单位：m = 1，k = 1）
+  var MASS = 1.0;
+  var K_B = 1.0;
+  var RADIUS = 5;
+  // 速度缩放：把"温度"映射到像素速度。v_rms = sqrt(2kT/m)（2D）
+  var VEL_SCALE = 0.16; // 像素/帧 的整体缩放
+
+  var params = { n:200, t:300, v:100 };
+  var playing = true;
+
+  var particles = [];
+  var wallX = W;           // 右壁当前位置
+  var wallImpulse = 0;     // 累计撞墙动量（用于压强）
+  var pressureEMA = 0;     // 压强的指数滑动平均
+  var cell = RADIUS * 2;   // 空间网格大小
+  var grid = {};
+
+  function targetSpeed(T){
+    // 2D 均方根速率（模拟单位），再乘缩放
+    return Math.sqrt(2 * K_B * T / MASS) * VEL_SCALE * 6;
+  }
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  function initParticles(){
+    particles = [];
+    var n = params.n;
+    var spd = targetSpeed(params.t);
+    for (var i=0;i<n;i++){
+      var ang = rand(0, Math.PI*2);
+      // 速率围绕目标值做一点离散，碰撞会自动演化到分布
+      var s = spd * rand(0.5, 1.5);
+      particles.push({
+        x: rand(RADIUS+2, wallX-RADIUS-2),
+        y: rand(RADIUS+2, H-RADIUS-2),
+        vx: Math.cos(ang)*s,
+        vy: Math.sin(ang)*s
+      });
+    }
+  }
+
+  function rescaleSpeeds(){
+    // 重新把整体速率标定到目标温度（用于温度滑块/加热/冷却）
+    var spd = targetSpeed(params.t);
+    var cur = 0, c = 0;
+    for (var i=0;i<particles.length;i++){
+      cur += Math.hypot(particles[i].vx, particles[i].vy); c++;
+    }
+    var mean = c ? cur/c : 1;
+    var factor = mean > 0.0001 ? (spd / mean) : 1;
+    for (var j=0;j<particles.length;j++){
+      particles[j].vx *= factor;
+      particles[j].vy *= factor;
+    }
+  }
+
+  function bindSlider(id, key, valId, fmt, after){
+    var el = document.getElementById(id);
+    var out = document.getElementById(valId);
+    el.addEventListener("input", function(){
+      params[key] = Number(el.value);
+      out.textContent = fmt ? fmt(params[key]) : params[key];
+      if (after) after();
+    });
+  }
+  bindSlider("n","n","nVal", null, function(){
+    document.getElementById("oN").textContent = params.n;
+    initParticles();
+  });
+  bindSlider("t","t","tVal", null, function(){ rescaleSpeeds(); });
+  bindSlider("v","v","vVal", null, function(){
+    wallX = W * (params.v/100);
+    // 把越界粒子拉回盒内
+    for (var i=0;i<particles.length;i++){
+      if (particles[i].x > wallX - RADIUS) particles[i].x = wallX - RADIUS - 1;
+    }
+  });
+
+  document.getElementById("play").addEventListener("click", function(){
+    playing = !playing;
+    this.textContent = playing ? "暂停" : "播放";
+    this.classList.toggle("on", playing);
+  });
+  document.getElementById("reset").addEventListener("click", function(){
+    params.v = 100; wallX = W;
+    document.getElementById("v").value = 100;
+    document.getElementById("vVal").textContent = "100";
+    initParticles();
+  });
+  document.getElementById("heat").addEventListener("click", function(){
+    params.t = Math.min(900, params.t + 150);
+    document.getElementById("t").value = params.t;
+    document.getElementById("tVal").textContent = params.t;
+    rescaleSpeeds();
+  });
+  document.getElementById("cool").addEventListener("click", function(){
+    params.t = Math.max(50, params.t - 150);
+    document.getElementById("t").value = params.t;
+    document.getElementById("tVal").textContent = params.t;
+    rescaleSpeeds();
+  });
+
+  // 空间分桶，降低碰撞检测复杂度
+  function buildGrid(){
+    grid = {};
+    for (var i=0;i<particles.length;i++){
+      var p = particles[i];
+      var cx = Math.floor(p.x / cell);
+      var cy = Math.floor(p.y / cell);
+      var key = cx + "," + cy;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(i);
+    }
+  }
+
+  function collidePair(a, b){
+    var dx = b.x - a.x, dy = b.y - a.y;
+    var d2 = dx*dx + dy*dy;
+    var minD = RADIUS*2;
+    if (d2 >= minD*minD || d2 === 0) return;
+    var d = Math.sqrt(d2);
+    var nx = dx/d, ny = dy/d;
+    // 相对速度沿法线分量
+    var dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+    var rel = dvx*nx + dvy*ny;
+    if (rel <= 0) return; // 正在远离
+    // 等质量弹性碰撞：交换法向分量
+    var imp = rel;
+    a.vx -= imp*nx; a.vy -= imp*ny;
+    b.vx += imp*nx; b.vy += imp*ny;
+    // 分离重叠
+    var overlap = (minD - d)/2;
+    a.x -= nx*overlap; a.y -= ny*overlap;
+    b.x += nx*overlap; b.y += ny*overlap;
+  }
+
+  function step(){
+    var i, p;
+    // 移动 + 墙壁碰撞
+    for (i=0;i<particles.length;i++){
+      p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < RADIUS){ p.x = RADIUS; p.vx = -p.vx; }
+      if (p.x > wallX - RADIUS){
+        p.x = wallX - RADIUS; p.vx = -p.vx;
+        wallImpulse += Math.abs(p.vx) * MASS; // 撞右壁的动量贡献压强
+      }
+      if (p.y < RADIUS){ p.y = RADIUS; p.vy = -p.vy; }
+      if (p.y > H - RADIUS){ p.y = H - RADIUS; p.vy = -p.vy; }
+    }
+    // 球-球碰撞（邻桶检测）
+    buildGrid();
+    for (var key in grid){
+      if (!grid.hasOwnProperty(key)) continue;
+      var parts = key.split(",");
+      var cx = Number(parts[0]), cy = Number(parts[1]);
+      var here = grid[key];
+      for (var ddx=-1; ddx<=1; ddx++){
+        for (var ddy=-1; ddy<=1; ddy++){
+          var nk = (cx+ddx) + "," + (cy+ddy);
+          var other = grid[nk];
+          if (!other) continue;
+          for (var ai=0; ai<here.length; ai++){
+            for (var bi=0; bi<other.length; bi++){
+              var ia = here[ai], ib = other[bi];
+              if (ia >= ib) continue;
+              collidePair(particles[ia], particles[ib]);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function measure(){
+    // 实测温度：2D 时 kT = (1/2) m <v^2>，反推 T
+    var sum2 = 0;
+    for (var i=0;i<particles.length;i++){
+      var p = particles[i];
+      sum2 += p.vx*p.vx + p.vy*p.vy;
+    }
+    var n = particles.length || 1;
+    var meanV2 = sum2 / n;                 // 像素^2
+    // 反映射：v_pixel = sqrt(2kT/m)*VEL_SCALE*6  =>  T = m*meanV2 / (2k) / (VEL_SCALE*6)^2
+    var sc = (VEL_SCALE*6);
+    var Tmeas = MASS * meanV2 / (2 * K_B) / (sc*sc);
+
+    // 压强：单位时间撞右壁动量 / 壁长。pressureEMA 已是每帧动量
+    var wallLen = H;
+    var Pinst = pressureEMA / wallLen;
+    var Vbox = (wallX) * H;                // 盒面积 ~ 体积（2D）
+
+    document.getElementById("oT").textContent = Tmeas.toFixed(0) + " K";
+    document.getElementById("oP").textContent = (Pinst*1000).toFixed(1);
+    // P*V/(N*T) 归一化常数
+    var pv = (Pinst * Vbox) / (n * Math.max(1,Tmeas));
+    document.getElementById("oPV").textContent = (pv*1e4).toFixed(2);
+  }
+
+  function drawBox(){
+    ctx.clearRect(0,0,W,H);
+    // 网格背景
+    ctx.strokeStyle = "rgba(76,201,240,0.05)";
+    ctx.lineWidth = 1;
+    for (var gx=0; gx<W; gx+=40){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+    for (var gy=0; gy<H; gy+=40){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+    // 盒外阴影（被活塞压缩的区域）
+    if (wallX < W){
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(wallX, 0, W-wallX, H);
+      // 活塞
+      ctx.fillStyle = "#2c476a";
+      ctx.fillRect(wallX-6, 0, 12, H);
+      ctx.fillStyle = "#4cc9f0";
+      ctx.fillRect(wallX-6, H/2-18, 12, 36);
+    }
+    // 粒子（按速率着色，慢=蓝 快=橙）
+    var spdRef = targetSpeed(params.t) * 1.6 + 0.001;
+    for (var i=0;i<particles.length;i++){
+      var p = particles[i];
+      var s = Math.hypot(p.vx, p.vy);
+      var f = Math.min(1, s/spdRef);
+      var r = Math.floor(76 + f*(255-76));
+      var g = Math.floor(201 - f*60);
+      var b = Math.floor(240 - f*150);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, RADIUS, 0, Math.PI*2);
+      ctx.fillStyle = "rgb("+r+","+g+","+b+")";
+      ctx.fill();
+    }
+    // 边框
+    ctx.strokeStyle = "#2c476a";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1,1,W-2,H-2);
+  }
+
+  function drawHist(){
+    hctx.clearRect(0,0,HW,HH);
+    hctx.fillStyle = "#08121e";
+    hctx.fillRect(0,0,HW,HH);
+    var nb = 32;
+    var bins = new Array(nb).fill(0);
+    var maxV = targetSpeed(params.t) * 3.0 + 0.001;
+    var i, s, idx;
+    for (i=0;i<particles.length;i++){
+      s = Math.hypot(particles[i].vx, particles[i].vy);
+      idx = Math.floor(s/maxV*nb);
+      if (idx>=0 && idx<nb) bins[idx]++;
+    }
+    var maxC = 1;
+    for (i=0;i<nb;i++) if (bins[i]>maxC) maxC = bins[i];
+    var bw = HW/nb;
+    // 直方图柱
+    for (i=0;i<nb;i++){
+      var bh = bins[i]/maxC * (HH-26);
+      hctx.fillStyle = "rgba(76,201,240,0.75)";
+      hctx.fillRect(i*bw+1, HH-18-bh, bw-2, bh);
+    }
+    // 麦克斯韦理论曲线（2D）：f(v) ∝ v*exp(-m v^2 / 2kT)，用实测 T 拟合峰值
+    // 用目标速率近似，曲线峰值缩放到 maxC
+    var sc = (VEL_SCALE*6);
+    var Tcur = params.t;
+    // 2D 分布最概然速率 v_p = sqrt(kT/m)，映射到像素
+    var beta = MASS / (2*K_B*Tcur);
+    // 在像素空间画曲线：vpix = vphys*sc
+    hctx.beginPath();
+    var peak = 0, vals = [];
+    for (i=0;i<=nb;i++){
+      var vpix = i/nb*maxV;
+      var vphys = vpix/sc;
+      var fv = vphys * Math.exp(-beta*vphys*vphys);
+      vals.push(fv);
+      if (fv>peak) peak = fv;
+    }
+    hctx.strokeStyle = "#ffd166";
+    hctx.lineWidth = 2;
+    for (i=0;i<=nb;i++){
+      var x = i*bw;
+      var y = HH-18 - (vals[i]/(peak||1))*(HH-26);
+      if (i===0) hctx.moveTo(x,y); else hctx.lineTo(x,y);
+    }
+    hctx.stroke();
+    // 坐标说明
+    hctx.fillStyle = "#9aa6b2";
+    hctx.font = "12px sans-serif";
+    hctx.fillText("速率分布直方图  →  速率 v", 10, HH-4);
+    hctx.fillText("粒子数", 6, 14);
+  }
+
+  var frame = 0;
+  function loop(){
+    if (playing){
+      wallImpulse = 0;
+      step();
+      // 压强滑动平均
+      pressureEMA = pressureEMA*0.9 + wallImpulse*0.1;
+    }
+    drawBox();
+    drawHist();
+    if ((frame++ % 6)===0) measure();
+    requestAnimationFrame(loop);
+  }
+
+  wallX = W * (params.v/100);
+  initParticles();
+  document.getElementById("oN").textContent = params.n;
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
