@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="430" viewBox="0 0 820 430" font-family="Segoe UI, Arial, sans-serif">
+  <rect x="0" y="0" width="820" height="430" fill="#0d1b2a"/>
+  <text x="410" y="34" fill="#e0e1dd" font-size="22" font-weight="bold" text-anchor="middle">摆动波 Pendulum Wave —— 同时释放后形成的"波浪"瞬间</text>
+
+  <!-- support bar -->
+  <rect x="70" y="55" width="680" height="14" rx="4" fill="#778da9"/>
+  <rect x="70" y="55" width="680" height="5" rx="2" fill="#a8b5c4"/>
+
+  <!-- pendulums: line + ball -->
+  <g stroke="#adb5bd" stroke-width="1.5">
+    <line x1="90"  y1="62" x2="90"   y2="210"/>
+    <line x1="135" y1="62" x2="155"  y2="221"/>
+    <line x1="180" y1="62" x2="214"  y2="232"/>
+    <line x1="225" y1="62" x2="263"  y2="243"/>
+    <line x1="270" y1="62" x2="301"  y2="254"/>
+    <line x1="315" y1="62" x2="330"  y2="265"/>
+    <line x1="360" y1="62" x2="354"  y2="276"/>
+    <line x1="405" y1="62" x2="381"  y2="287"/>
+    <line x1="450" y1="62" x2="414"  y2="298"/>
+    <line x1="495" y1="62" x2="458"  y2="309"/>
+    <line x1="540" y1="62" x2="513"  y2="320"/>
+    <line x1="585" y1="62" x2="579"  y2="331"/>
+    <line x1="630" y1="62" x2="642"  y2="342"/>
+    <line x1="675" y1="62" x2="704"  y2="353"/>
+    <line x1="720" y1="62" x2="757"  y2="364"/>
+  </g>
+
+  <g stroke="#0d1b2a" stroke-width="1">
+    <circle cx="90"  cy="210" r="11" fill="hsl(0,75%,58%)"/>
+    <circle cx="155" cy="221" r="11" fill="hsl(24,75%,58%)"/>
+    <circle cx="214" cy="232" r="11" fill="hsl(48,75%,58%)"/>
+    <circle cx="263" cy="243" r="11" fill="hsl(72,70%,55%)"/>
+    <circle cx="301" cy="254" r="11" fill="hsl(96,65%,52%)"/>
+    <circle cx="330" cy="265" r="11" fill="hsl(140,60%,50%)"/>
+    <circle cx="354" cy="276" r="11" fill="hsl(170,60%,50%)"/>
+    <circle cx="381" cy="287" r="11" fill="hsl(190,65%,52%)"/>
+    <circle cx="414" cy="298" r="11" fill="hsl(205,70%,55%)"/>
+    <circle cx="458" cy="309" r="11" fill="hsl(220,72%,58%)"/>
+    <circle cx="513" cy="320" r="11" fill="hsl(245,65%,62%)"/>
+    <circle cx="579" cy="331" r="11" fill="hsl(270,60%,62%)"/>
+    <circle cx="642" cy="342" r="11" fill="hsl(290,60%,60%)"/>
+    <circle cx="704" cy="353" r="11" fill="hsl(315,65%,60%)"/>
+    <circle cx="757" cy="364" r="11" fill="hsl(338,70%,60%)"/>
+  </g>
+
+  <text x="410" y="408" fill="#9aa6b2" font-size="14" text-anchor="middle">每个摆的长度都不同 → 周期不同 → 相位逐渐错开 → 整体连成一条"行波"</text>
+</svg>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摆动波模拟器 · Pendulum Wave</title>
+<style>
+  :root { --bg:#0d1b2a; --panel:#1b263b; --ink:#e0e1dd; --muted:#9aa6b2; --accent:#4cc9f0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif; }
+  header { padding:18px 22px 6px; }
+  h1 { margin:0; font-size:22px; }
+  header p { margin:6px 0 0; color:var(--muted); font-size:14px; }
+  .wrap { display:flex; flex-wrap:wrap; gap:16px; padding:16px 22px 28px; align-items:flex-start; }
+  .stage { background:#000814; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.4); flex:1 1 560px; min-width:320px; }
+  canvas { width:100%; height:auto; display:block; border-radius:12px; }
+  .panel { background:var(--panel); border-radius:12px; padding:16px 18px; width:280px; flex:0 0 auto; }
+  .panel h2 { font-size:15px; margin:0 0 10px; color:var(--accent); }
+  .row { margin:12px 0; }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  label b { color:var(--ink); }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .btns { display:flex; gap:8px; margin-top:14px; }
+  button { flex:1; background:var(--accent); color:#03045e; border:none; padding:9px 0;
+           border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid #415a77; }
+  .stat { font-size:13px; color:var(--muted); margin-top:14px; line-height:1.7; }
+  .stat span { color:var(--ink); font-variant-numeric:tabular-nums; }
+  .formula { margin-top:14px; padding:10px 12px; background:#0d1b2a; border-radius:8px;
+             font-size:13px; color:var(--muted); line-height:1.7; }
+  .formula code { color:var(--accent); }
+  footer { padding:0 22px 26px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>摆动波模拟器 · Pendulum Wave</h1>
+  <p>一排长度不同的单摆同时释放，依次错开形成行波，循环结束又重新同步。纯物理，零特效。</p>
+</header>
+
+<div class="wrap">
+  <div class="stage"><canvas id="cv" width="760" height="460"></canvas></div>
+
+  <div class="panel">
+    <h2>参数调节</h2>
+    <div class="row">
+      <label>摆的数量 <b id="vN">15</b></label>
+      <input id="N" type="range" min="5" max="30" value="15" step="1">
+    </div>
+    <div class="row">
+      <label>总循环时间 <b id="vC">60</b> 秒</label>
+      <input id="C" type="range" min="20" max="120" value="60" step="1">
+    </div>
+    <div class="row">
+      <label>最长摆每周期振动 <b id="vB">51</b> 次</label>
+      <input id="B" type="range" min="20" max="80" value="51" step="1">
+    </div>
+    <div class="row">
+      <label>初始摆角 <b id="vA">14</b> 度</label>
+      <input id="A" type="range" min="4" max="20" value="14" step="1">
+    </div>
+    <div class="row">
+      <label>播放速度 <b id="vS">1.0</b>x</label>
+      <input id="S" type="range" min="0.25" max="4" value="1" step="0.25">
+    </div>
+
+    <div class="btns">
+      <button id="reset">重新释放</button>
+      <button id="pause" class="ghost">暂停</button>
+    </div>
+
+    <div class="stat">
+      已运行: <span id="elapsed">0.0</span> s &nbsp;/&nbsp; 循环 <span id="cyc">60</span> s<br>
+      下次同步还有: <span id="resync">60.0</span> s
+    </div>
+
+    <div class="formula">
+      单摆周期 <code>T = 2&pi;&radic;(L/g)</code><br>
+      反解摆长 <code>L = g&middot;(T/2&pi;)&sup2;</code><br>
+      第 k 个摆: <code>T&#8342; = T&#9484;&#9488;&#9492; / (base + k - 1)</code>
+    </div>
+  </div>
+</div>
+
+<footer>caimingye78/physicsexperiment · 拖动滑块可实时改变波形；建议摆角小于 15&deg; 以贴近理论。</footer>
+
+<script>
+const G = 9.8;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+const ui = {
+  N: document.getElementById('N'), C: document.getElementById('C'),
+  B: document.getElementById('B'), A: document.getElementById('A'),
+  S: document.getElementById('S'),
+  vN: document.getElementById('vN'), vC: document.getElementById('vC'),
+  vB: document.getElementById('vB'), vA: document.getElementById('vA'),
+  vS: document.getElementById('vS'),
+  elapsed: document.getElementById('elapsed'), cyc: document.getElementById('cyc'),
+  resync: document.getElementById('resync'),
+};
+
+let pend = [];      // {period, omega, lengthM, color}
+let tCycle = 60;    // 秒
+let amp = 14 * Math.PI / 180;
+let speed = 1;
+let simTime = 0;    // 模拟已运行秒数
+let paused = false;
+let lastTs = null;
+
+function buildPendulums() {
+  const n = +ui.N.value;
+  tCycle = +ui.C.value;
+  const base = +ui.B.value;
+  amp = (+ui.A.value) * Math.PI / 180;
+  speed = +ui.S.value;
+
+  ui.vN.textContent = n; ui.vC.textContent = tCycle;
+  ui.vB.textContent = base; ui.vA.textContent = ui.A.value;
+  ui.vS.textContent = (+ui.S.value).toFixed(2);
+  ui.cyc.textContent = tCycle;
+
+  pend = [];
+  for (let k = 0; k < n; k++) {
+    const osc = base + k;
+    const period = tCycle / osc;
+    const lengthM = G * Math.pow(period / (2 * Math.PI), 2);
+    const hue = Math.round(k / Math.max(1, n - 1) * 320);
+    pend.push({ period, omega: 2 * Math.PI / period, lengthM, hue });
+  }
+}
+
+function reset() { simTime = 0; buildPendulums(); }
+
+[ui.N, ui.C, ui.B, ui.A].forEach(el => el.addEventListener('input', () => { buildPendulums(); }));
+ui.S.addEventListener('input', () => { speed = +ui.S.value; ui.vS.textContent = speed.toFixed(2); });
+document.getElementById('reset').addEventListener('click', reset);
+document.getElementById('pause').addEventListener('click', (e) => {
+  paused = !paused; e.target.textContent = paused ? '继续' : '暂停';
+});
+
+function draw() {
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // 支架横杆
+  const barY = 70, barX0 = 70, barX1 = W - 70;
+  ctx.fillStyle = '#415a77';
+  ctx.fillRect(barX0 - 14, barY - 8, (barX1 - barX0) + 28, 12);
+
+  const n = pend.length;
+  if (n === 0) return;
+
+  // 像素/米 比例：让最长摆约占画布 70%
+  const maxLenM = pend[0].lengthM;
+  const pxPerM = (H - barY - 40) / maxLenM * 0.92;
+  const gap = (barX1 - barX0) / (n - 1 || 1);
+
+  for (let k = 0; k < n; k++) {
+    const p = pend[k];
+    const pivotX = barX0 + gap * k;
+    const theta = amp * Math.cos(p.omega * simTime);   // 简谐近似
+    const Lpx = p.lengthM * pxPerM;
+    const bx = pivotX + Lpx * Math.sin(theta);
+    const by = barY + Lpx * Math.cos(theta);
+
+    ctx.strokeStyle = 'rgba(173,181,189,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(bx, by); ctx.stroke();
+
+    ctx.beginPath();
+    ctx.fillStyle = `hsl(${p.hue},75%,58%)`;
+    ctx.arc(bx, by, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.stroke();
+  }
+
+  // 文本
+  ctx.fillStyle = 'rgba(154,166,178,0.9)';
+  ctx.font = '13px Segoe UI, sans-serif';
+  ctx.fillText(`摆长 ${(pend[n-1].lengthM*100).toFixed(1)}–${(pend[0].lengthM*100).toFixed(1)} cm`, barX0 - 14, H - 14);
+}
+
+function tick(ts) {
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+  if (!paused) simTime += dt * speed;
+
+  const into = simTime % tCycle;
+  ui.elapsed.textContent = simTime.toFixed(1);
+  ui.resync.textContent = (tCycle - into).toFixed(1);
+
+  draw();
+  requestAnimationFrame(tick);
+}
+
+buildPendulums();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
