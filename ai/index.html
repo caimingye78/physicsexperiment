@@ -84,7 +84,7 @@
 
 <script>
 let cur = null;
-const DEFAULT_API_BASE = "https://physicsexperiment-backend.onrender.com";
+const DEFAULT_API_BASE = "";
 const md = t => marked.parse(t || "");
 
 function apiBase() {
@@ -100,6 +100,9 @@ function saveBackendUrl() {
 }
 
 async function api(u, m = "GET", b = null) {
+  if (!apiBase()) {
+    throw new Error("请先部署后端，并在上方填写 Render 后端地址");
+  }
   const r = await fetch(apiBase() + u, {
     method: m,
     headers: {"Content-Type": "application/json"},
@@ -156,6 +159,12 @@ async function doGen() {
 }
 
 async function loadList() {
+  if (!apiBase()) {
+    document.getElementById("cnt").textContent = "";
+    document.getElementById("list").innerHTML = '<div class="empty">请先部署后端，并在上方填写后端地址</div>';
+    S("后端尚未连接：请填写 Render 后端地址");
+    return;
+  }
   try {
     const ps = await api("/api/list");
     document.getElementById("cnt").textContent = `(${ps.length})`;
