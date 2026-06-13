@@ -12,3 +12,11 @@ services:
         value: deepseek-chat
       - key: AI_API_KEY
         sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: caimingye78/physicsexperiment
+      - key: GITHUB_BRANCH
+        value: main
+      - key: GITHUB_SAVE_PATH
+        value: ai-saved-plans

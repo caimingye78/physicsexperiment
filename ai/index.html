@@ -119,6 +119,13 @@ async function api(u, m = "GET", b = null) {
 
 const S = m => document.getElementById("status").textContent = m;
 
+function githubStatus(github) {
+  if (!github) return "";
+  if (github.ok && github.url) return `，已保存到 GitHub：${github.path}`;
+  if (github.skipped) return "，未配置 GitHub 保存";
+  return `，GitHub 保存失败：${github.msg || "未知错误"}`;
+}
+
 function quick(t) {
   document.getElementById("topic").value = t;
   doGen();
@@ -134,7 +141,7 @@ async function doGen() {
   try {
     const res = await api("/api/generate", "POST", {topic: t});
     if (res.ok) {
-      S("方案已生成");
+      S("方案已生成" + githubStatus(res.github));
       cur = res.id;
       await loadList();
       showPlan(res.id);
@@ -194,6 +201,7 @@ async function doAna(id) {
   b.innerHTML = '<span class="spinner"></span> 分析中...';
   const res = await api("/api/analyze/" + id, "POST");
   if (res.ok) document.getElementById("anaBox").innerHTML = md(res.analysis);
+  S(res.ok ? "分析完成" + githubStatus(res.github) : (res.msg || "分析失败"));
   b.disabled = false;
   b.textContent = "AI 分析";
   loadList();
@@ -203,7 +211,8 @@ async function doImp(id) {
   const b = document.getElementById("iBtn");
   b.disabled = true;
   b.innerHTML = '<span class="spinner"></span> 改进中...';
-  await api("/api/improve/" + id, "POST");
+  const res = await api("/api/improve/" + id, "POST");
+  S(res.ok ? "改进完成" + githubStatus(res.github) : (res.msg || "改进失败"));
   showPlan(id);
 }
 

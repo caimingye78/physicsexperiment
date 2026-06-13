@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """中学物理创新实验方案 AI 生成与分析平台后端。"""
 import os
+import base64
+import re
 import sqlite3
+from datetime import datetime, timezone
 
 import requests
 from flask import Flask, jsonify, request
@@ -14,6 +17,10 @@ DB = os.getenv("DB_PATH", "plans.db")
 AI_API_URL = os.getenv("AI_API_URL", "https://api.deepseek.com/v1/chat/completions")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "deepseek-chat")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+GITHUB_REPO = os.getenv("GITHUB_REPO", "caimingye78/physicsexperiment")
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
+GITHUB_SAVE_PATH = os.getenv("GITHUB_SAVE_PATH", "ai-saved-plans")
 
 
 def init_db():
@@ -73,6 +80,96 @@ def call_ai(prompt, sys="你是一位经验丰富的中学物理教研专家，�
         return f"API 返回异常：{data}"
     except Exception as e:
         return f"调用失败：{e}（请检查网络、后端环境变量和 API Key）"
+
+
+def slugify_topic(topic):
+    slug = re.sub(r"[^A-Za-z0-9\u4e00-\u9fff]+", "-", topic).strip("-")
+    return slug[:48] or "physics-plan"
+
+
+def github_file_path(plan):
+    return f"{GITHUB_SAVE_PATH}/{plan['id']:04d}-{slugify_topic(plan['topic'])}.md"
+
+
+def github_headers():
+    return {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+
+def build_plan_markdown(plan):
+    saved_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    parts = [
+        f"# {plan['topic']}",
+        "",
+        f"- 方案 ID：{plan['id']}",
+        f"- 保存时间：{saved_at}",
+        f"- 版本：{plan['version']}",
+        "",
+        "## AI 生成方案",
+        "",
+        plan["plan"] or "暂无",
+    ]
+    if plan["analysis"]:
+        parts.extend(["", "## AI 分析报告", "", plan["analysis"]])
+    if plan["improved"]:
+        parts.extend(
+            [
+                "",
+                f"## 改进版方案（第 {plan['version']} 次迭代）",
+                "",
+                plan["improved"],
+            ]
+        )
+    return "\n".join(parts).rstrip() + "\n"
+
+
+def save_plan_to_github(pid, reason):
+    if not GITHUB_TOKEN:
+        return {"ok": False, "skipped": True, "msg": "未配置 GITHUB_TOKEN"}
+
+    plan = db("SELECT * FROM plans WHERE id=?", (pid,), one=True)
+    if not plan:
+        return {"ok": False, "msg": "方案不存在，无法保存到 GitHub"}
+
+    path = github_file_path(plan)
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
+    params = {"ref": GITHUB_BRANCH}
+    sha = None
+
+    existing = requests.get(url, headers=github_headers(), params=params, timeout=30)
+    if existing.status_code == 200:
+        sha = existing.json().get("sha")
+    elif existing.status_code != 404:
+        return {
+            "ok": False,
+            "msg": f"读取 GitHub 文件失败：{existing.status_code} {existing.text[:200]}",
+        }
+
+    content = base64.b64encode(build_plan_markdown(plan).encode("utf-8")).decode("ascii")
+    payload = {
+        "message": f"{reason}: {plan['topic']}",
+        "content": content,
+        "branch": GITHUB_BRANCH,
+    }
+    if sha:
+        payload["sha"] = sha
+
+    saved = requests.put(url, headers=github_headers(), json=payload, timeout=60)
+    if saved.status_code not in (200, 201):
+        return {
+            "ok": False,
+            "msg": f"保存到 GitHub 失败：{saved.status_code} {saved.text[:200]}",
+        }
+
+    data = saved.json().get("content", {})
+    return {
+        "ok": True,
+        "path": path,
+        "url": data.get("html_url"),
+    }
 
 
 P_GEN = """请围绕主题「{topic}」，为中学生小组设计一份创新物理实验方案，用Markdown格式输出：
@@ -135,8 +232,9 @@ def generate():
 
         plan = call_ai(P_GEN.format(topic=topic))
         pid = db("INSERT INTO plans(topic, plan) VALUES(?,?)", (topic, plan))
+        github = save_plan_to_github(pid, "Save generated physics plan")
 
-        return jsonify({"ok": True, "id": pid, "plan": plan})
+        return jsonify({"ok": True, "id": pid, "plan": plan, "github": github})
     except Exception as e:
         return jsonify({"ok": False, "msg": "后端出错：" + str(e)})
 
@@ -149,7 +247,8 @@ def analyze(pid):
     base = r["improved"] or r["plan"]
     ana = call_ai(P_ANA.format(plan=base))
     db("UPDATE plans SET analysis=? WHERE id=?", (ana, pid))
-    return jsonify({"ok": True, "analysis": ana})
+    github = save_plan_to_github(pid, "Save physics plan analysis")
+    return jsonify({"ok": True, "analysis": ana, "github": github})
 
 
 @app.route("/api/improve/<int:pid>", methods=["POST"])
@@ -165,7 +264,8 @@ def improve(pid):
         (imp, ana, pid),
     )
     r = db("SELECT version FROM plans WHERE id=?", (pid,), one=True)
-    return jsonify({"ok": True, "improved": imp, "version": r["version"]})
+    github = save_plan_to_github(pid, "Save improved physics plan")
+    return jsonify({"ok": True, "improved": imp, "version": r["version"], "github": github})
 
 
 @app.route("/api/list")

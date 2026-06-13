@@ -39,6 +39,14 @@ AI 平台访问：`https://caimingye78.github.io/physicsexperiment/ai/`
 | `AI_API_URL` | `https://api.deepseek.com/v1/chat/completions` |
 | `AI_API_KEY` | 在平台环境变量中填写，不要提交到 GitHub |
 | `AI_MODEL` | `deepseek-chat` |
+| `GITHUB_TOKEN` | GitHub fine-grained token，授予本仓库 Contents 读写权限 |
+| `GITHUB_REPO` | `caimingye78/physicsexperiment` |
+| `GITHUB_BRANCH` | `main` |
+| `GITHUB_SAVE_PATH` | `ai-saved-plans` |
+
+配置 `GITHUB_TOKEN` 后，生成方案、AI 分析、迭代改进都会自动保存为 Markdown 文件，路径类似：
+
+`ai-saved-plans/0001-电磁感应.md`
 
 部署完成后，将 `ai/index.html` 中的 `API_BASE` 改成真实后端地址。
 
