@@ -1,9 +1,43 @@
-# physicsexperiment · 高中物理震撼实验馆
+# physicsexperiment · 物理创新实验平台
 
-一组可交互、可离线运行的高中物理演示实验。每个实验都包含网页模拟器、可打印讲义与原理示意图，并把经典考点"实验化"成可动手探究的环节。
+本仓库包含两部分：
+
+- `docs/`：GitHub Pages 前端，提供“中学生物理创新实验 · AI 生成与分析平台”。
+- `backend/`：Flask 后端，负责调用大模型 API、保存方案、分析和迭代改进。
 
 在线访问（GitHub Pages 部署后）：`https://caimingye78.github.io/physicsexperiment/`
-本地访问：直接用浏览器打开根目录的 `index.html`。
+
+> 注意：GitHub Pages 只能托管静态网页，不能安全保存或运行 AI API Key。后端请部署到 Render、Railway 或自己的服务器，并把 API Key 放在环境变量中。
+
+## AI 平台目录结构
+
+- `backend/app.py` — Flask API 服务。
+- `backend/requirements.txt` — Python 依赖。
+- `backend/Procfile` — Render 等平台的启动命令。
+- `docs/index.html` — GitHub Pages 前端页面。
+- `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流。
+
+## 部署后端
+
+以 Render 为例：
+
+| 配置项 | 内容 |
+| --- | --- |
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `gunicorn app:app` |
+
+环境变量：
+
+| 变量名 | 示例 |
+| --- | --- |
+| `AI_API_URL` | `https://api.deepseek.com/v1/chat/completions` |
+| `AI_API_KEY` | 在平台环境变量中填写，不要提交到 GitHub |
+| `AI_MODEL` | `deepseek-chat` |
+
+部署完成后，将 `docs/index.html` 中的 `API_BASE` 改成真实后端地址。
+
+## 旧版实验馆
 
 ## 实验清单
 
