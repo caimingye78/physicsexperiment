@@ -1,30 +1,55 @@
-# physicsexperiment · 物理创新实验平台
+# 中学生物理创新实验 · AI生成与分析平台
 
-本仓库包含两部分：
+输入实验主题，AI 自动生成完整实验方案，并支持 AI 分析、迭代改进、打分排名、多版本对比和导出。
 
-- `ai/`：GitHub Pages 前端，提供“中学生物理创新实验 · AI 生成与分析平台”。
-- `backend/`：Flask 后端，负责调用大模型 API、保存方案、分析和迭代改进。
+## 功能
 
-在线访问（GitHub Pages 部署后）：`https://caimingye78.github.io/physicsexperiment/`
-AI 平台访问：`https://caimingye78.github.io/physicsexperiment/ai/`
+- AI 生成实验方案：名称、原理、器材、步骤、数据表、分工。
+- AI 分析：创新性评分、可行性、科学性、安全提示、改进建议。
+- 一键迭代改进：每次都在上一版基础上升级。
+- 方案打分排名：按创新性评分排序。
+- 多版本对比：初始方案与改进版并排查看。
+- 导出 Markdown，或通过浏览器打印为 PDF。
+- 可选自动保存到 GitHub：配置 `GITHUB_TOKEN` 后，方案会保存为 Markdown 文件。
 
-> 注意：GitHub Pages 只能托管静态网页，不能安全保存或运行 AI API Key。后端请部署到 Render、Railway 或自己的服务器，并把 API Key 放在环境变量中。
+## 目录结构
 
-## AI 平台目录结构
+```text
+physicsexperiment/
+├── backend/
+│   ├── app.py
+│   ├── requirements.txt
+│   └── Procfile
+├── docs/
+│   └── index.html
+├── .github/
+│   └── workflows/
+│       └── pages.yml
+├── .gitignore
+├── render.yaml
+└── README.md
+```
 
-- `backend/app.py` — Flask API 服务。
-- `backend/requirements.txt` — Python 依赖。
-- `backend/Procfile` — Render 等平台的启动命令。
-- `ai/index.html` — GitHub Pages 上的 AI 平台页面。
-- `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流。
+## 本地运行
 
-## 部署后端
+```bash
+cd backend
+pip install -r requirements.txt
+export AI_API_KEY=你的模型服务Key
+python app.py
+```
 
-以 Render 为例：
+本地调试前端时，把 `docs/index.html` 顶部的 `API_BASE` 改成：
 
-方式一：在 Render 中选择本仓库的 `render.yaml` 作为 Blueprint，然后填写 `AI_API_KEY`。
+```js
+const API_BASE = "http://127.0.0.1:5000";
+```
 
-方式二：手动创建 Web Service：
+然后用浏览器打开 `docs/index.html`。
+
+## 后端部署
+
+Render 手动创建 Web Service：
 
 | 配置项 | 内容 |
 | --- | --- |
@@ -37,52 +62,25 @@ AI 平台访问：`https://caimingye78.github.io/physicsexperiment/ai/`
 | 变量名 | 示例 |
 | --- | --- |
 | `AI_API_URL` | `https://api.deepseek.com/v1/chat/completions` |
-| `AI_API_KEY` | 在平台环境变量中填写，不要提交到 GitHub |
+| `AI_API_KEY` | 在部署平台环境变量中填写，不要提交到 GitHub |
 | `AI_MODEL` | `deepseek-chat` |
-| `GITHUB_TOKEN` | GitHub fine-grained token，授予本仓库 Contents 读写权限 |
+| `GITHUB_TOKEN` | 可选，GitHub fine-grained token，授予本仓库 Contents 读写权限 |
 | `GITHUB_REPO` | `caimingye78/physicsexperiment` |
 | `GITHUB_BRANCH` | `main` |
 | `GITHUB_SAVE_PATH` | `ai-saved-plans` |
 
-配置 `GITHUB_TOKEN` 后，生成方案、AI 分析、迭代改进都会自动保存为 Markdown 文件，路径类似：
+部署完成后，把 `docs/index.html` 中的 `API_BASE` 改成 Render 后端地址：
 
-`ai-saved-plans/0001-电磁感应.md`
-
-部署完成后，将 `ai/index.html` 中的 `API_BASE` 改成真实后端地址。
-
-## 旧版实验馆
-
-## 实验清单
-
-| # | 实验 | 关键物理 | 经典题实验化 |
-| --- | --- | --- | --- |
-| 00 | [摆动波](web/index.html) | 单摆周期 T = 2π√(L/g) | 由周期反推重力加速度 g |
-| 01 | [克拉尼图形](experiments/01-chladni/) | 二维驻波 / 节线 | 频率 ∝ √(m²+n²) |
-| 02 | [双缝干涉](experiments/02-double-slit/) | I = I0·cos²(πd·sinθ/λ) | 测波长 λ=d·Δy/L、缺级 |
-| 03 | [多普勒效应](experiments/03-doppler/) | f' = f·(v±vo)/(v∓vs) | 火车鸣笛求 Δf、马赫锥 |
-| 04 | [李萨如图形](experiments/04-lissajous/) | 垂直简谐振动合成 | 示波器测未知频率 |
-| 05 | [涡流制动](experiments/05-eddy-brake/) | 楞次定律 | 终极速度 v=m·g/k |
-| 06 | [猎人射猴](experiments/06-monkey-hunter/) | 抛体运动独立性 | 命中与初速无关的证明 |
-| 07 | [受迫振动与共振](experiments/07-resonance/) | 共振曲线 | 塔科马大桥/高脚杯危险频率 |
-| 08 | [弦上驻波](experiments/08-standing-wave/) | λ = 2L/n，f_n = n·v/(2L) | 弦乐器定音、测声速 |
-| 09 | [气体动理论](experiments/09-gas-kinetics/) | 麦克斯韦分布 | P·V = N·k·T 验证 |
-| 10 | [牛顿摆](experiments/10-newtons-cradle/) | 动量与动能双守恒 | 为何不能"一球双速"弹出 |
-
-## 目录结构
-
-- `index.html` — 统一首页（实验馆入口，含全部 11 个实验）
-- `experiments/` — 10 个实验，每个含 `index.html`（模拟器）、`handout.md`（讲义）、`diagram.svg`（示意图）
-- `web/`、`scripts/`、`docs/` — 摆动波实验：模拟器、摆长计算脚本、讲义与数据表
-- `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流
-
-## 运行方式
-
-纯前端、无外部依赖，双击任意 `index.html` 即可离线运行。也可启动本地服务：
-
-```bash
-python3 -m http.server 8000   # 然后访问 http://localhost:8000/
+```js
+const API_BASE = "https://你的后端.onrender.com";
 ```
 
-## 在线发布（GitHub Pages）
+## 前端部署
 
-本仓库已内置部署工作流。合并到 `main` 后，在 GitHub 仓库的 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions** 即可，几分钟后即可通过上面的 Pages 网址在线点击访问。
+本仓库内置 GitHub Pages 工作流。推送到 `main` 或 `master` 后，在 GitHub 仓库的 Settings -> Pages 中选择 GitHub Actions。
+
+Pages 会部署 `docs/` 目录。
+
+## 注意
+
+API Key 只放在部署平台环境变量里，切勿写进代码上传。

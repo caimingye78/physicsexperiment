@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>物理创新实验 · AI生成与分析平台</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Microsoft YaHei",sans-serif;background:#f0f4f8;color:#2d3748}
+  header{background:linear-gradient(135deg,#1a73e8,#6c5ce7);color:#fff;padding:24px;text-align:center}
+  header h1{font-size:1.5rem}header p{opacity:.85;margin-top:6px;font-size:.9rem}
+  .container{max-width:1150px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:330px 1fr;gap:16px}
+  .card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .gen-box{display:flex;gap:8px;margin-bottom:12px}
+  input{flex:1;padding:10px;border:1px solid #cbd5e0;border-radius:8px;font-size:.95rem}
+  button{background:#1a73e8;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:.9rem}
+  button:hover{filter:brightness(.92)}button:disabled{background:#a0aec0}
+  button.green{background:#38a169}button.orange{background:#ed8936}button.purple{background:#6c5ce7}
+  button.gray{background:#718096}button.small{padding:5px 10px;font-size:.8rem}
+  .tags{margin:8px 0;font-size:.78rem;color:#718096}
+  .tags span{cursor:pointer;color:#1a73e8;margin-right:10px}
+  .tabs{display:flex;gap:6px;margin:10px 0}
+  .tabs button{flex:1;background:#edf2f7;color:#4a5568;padding:7px}
+  .tabs button.on{background:#1a73e8;color:#fff}
+  .item{padding:12px;border-bottom:1px solid #edf2f7;cursor:pointer;border-radius:8px}
+  .item:hover,.item.active{background:#ebf4ff}
+  .item h4{font-size:.92rem;color:#1a56a8}.item .meta{font-size:.74rem;color:#718096;margin-top:3px}
+  .badge{display:inline-block;font-size:.68rem;padding:1px 8px;border-radius:10px;margin-left:6px;color:#fff}
+  .b1{background:#38a169}.b2{background:#ed8936}.b3{background:#6c5ce7}
+  .rank-num{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;color:#fff;font-weight:bold;margin-right:8px;font-size:.8rem}
+  .r1{background:#f6c700}.r2{background:#b0b8c4}.r3{background:#cd7f32}.rx{background:#a0aec0}
+  .score{float:right;background:#38a169;color:#fff;padding:2px 10px;border-radius:10px;font-size:.8rem}
+  .section{margin-top:16px}
+  .section h5{color:#fff;background:#4a5568;padding:6px 12px;border-radius:6px;font-size:.9rem}
+  .md{padding:12px;background:#f7fafc;border-radius:8px;font-size:.9rem;line-height:1.75;margin-top:6px}
+  .md h2{font-size:1.05rem;color:#1a56a8;margin:12px 0 6px}
+  .md h3{font-size:.95rem;margin:10px 0 4px}
+  .md table{border-collapse:collapse;width:100%;margin:8px 0}
+  .md th,.md td{border:1px solid #cbd5e0;padding:5px 8px;font-size:.85rem}
+  .md th{background:#ebf4ff}.md ul,.md ol{padding-left:22px}
+  .md code{background:#edf2f7;padding:1px 4px;border-radius:3px}
+  .toolbar{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .compare select{padding:8px;border:1px solid #cbd5e0;border-radius:6px;width:100%}
+  .compare .col{background:#f7fafc;border-radius:8px;padding:10px;max-height:480px;overflow:auto}
+  #status{font-size:.85rem;color:#e53e3e;margin-top:8px;min-height:1.2em}
+  .empty{color:#a0aec0;text-align:center;padding:40px 0}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:800px){.container{grid-template-columns:1fr}.compare{grid-template-columns:1fr}}
+  @media print{header,.card:first-child,.toolbar,.tabs{display:none}.container{display:block}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>中学生物理创新实验 · AI 生成与分析平台</h1>
+  <p>输入主题 → AI生成方案 → AI分析 → 迭代改进 → 排名/对比/导出</p>
+</header>
+<div class="container">
+  <div class="card">
+    <div class="gen-box">
+      <input id="topic" placeholder="输入实验主题，如：电磁感应">
+      <button id="genBtn" onclick="doGen()">生成</button>
+    </div>
+    <div class="tags">试试：
+      <span onclick="quick('浮力')">浮力</span>
+      <span onclick="quick('电磁感应')">电磁感应</span>
+      <span onclick="quick('凸透镜成像')">凸透镜成像</span>
+      <span onclick="quick('自制乐器与声音')">声音</span>
+    </div>
+    <div id="status"></div>
+    <div class="tabs">
+      <button id="tab-list" class="on" onclick="switchTab('list')">方案库</button>
+      <button id="tab-rank" onclick="switchTab('rank')">排名榜</button>
+    </div>
+    <div id="list"></div>
+    <div id="rank" style="display:none"></div>
+  </div>
+  <div class="card" id="detail"><div class="empty">生成或点击左侧方案查看详情</div></div>
+</div>
+<script>
+const API_BASE = "";
+let cur=null, curData=null;
+const md=t=>marked.parse(t||"");
+async function api(u,m="GET",b=null){
+  const r=await fetch(API_BASE+u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):null});
+  const t=await r.text();
+  try{return JSON.parse(t);}catch(e){throw new Error("后端返回异常："+t.slice(0,200));}
+}
+const S=m=>document.getElementById("status").textContent=m;
+function quick(t){document.getElementById("topic").value=t;doGen();}
+function switchTab(tab){
+  document.getElementById("tab-list").className=tab==="list"?"on":"";
+  document.getElementById("tab-rank").className=tab==="rank"?"on":"";
+  document.getElementById("list").style.display=tab==="list"?"block":"none";
+  document.getElementById("rank").style.display=tab==="rank"?"block":"none";
+  if(tab==="rank")loadRank();
+}
+async function doGen(){
+  const t=document.getElementById("topic").value.trim();
+  if(!t)return S("请输入实验主题");
+  const b=document.getElementById("genBtn");
+  b.disabled=true;b.innerHTML='<span class="spinner"></span>';
+  S("AI 正在设计方案，约需 10-30 秒…");
+  try{
+    const res=await api("/api/generate","POST",{topic:t});
+    if(res.ok){S("已生成");cur=res.id;await loadList();showPlan(res.id);}
+    else S(res.msg);
+  }catch(e){S("生成失败："+e);}
+  b.disabled=false;b.textContent="生成";
+}
+async function loadList(){
+  const ps=await api("/api/list");
+  const box=document.getElementById("list");
+  if(!ps.length){box.innerHTML='<div class="empty">还没有方案，输入主题生成第一个吧</div>';return;}
+  box.innerHTML=ps.map(p=>`
+    <div class="item ${p.id===cur?'active':''}" onclick="showPlan(${p.id})">
+      <h4>${p.topic}
+        ${p.a?'<span class="badge b1">已分析</span>':''}
+        ${p.i?`<span class="badge b2">改进v${p.version}</span>`:''}
+        ${p.score>0?`<span class="badge b3">${p.score}分</span>`:''}</h4>
+      <div class="meta">${p.created}</div></div>`).join("");
+}
+async function loadRank(){
+  const ps=await api("/api/rank");
+  const box=document.getElementById("rank");
+  if(!ps.length){box.innerHTML='<div class="empty">还没有已评分的方案，先对方案做“AI分析”</div>';return;}
+  box.innerHTML=ps.map((p,i)=>{
+    const cls=i===0?"r1":i===1?"r2":i===2?"r3":"rx";
+    return `<div class="item" onclick="showPlan(${p.id})">
+      <h4><span class="rank-num ${cls}">${i+1}</span>${p.topic}
+        <span class="score">${p.score} 分</span></h4>
+      <div class="meta">改进v${p.version} ｜ ${p.created}</div></div>`;}).join("");
+}
+async function showPlan(id){
+  cur=id;
+  const p=await api("/api/get/"+id);curData=p;
+  loadList();
+  const versionOpts=(p.versions||[]).map(v=>`<option value="${v.v}">${v.type}</option>`).join("");
+  document.getElementById("detail").innerHTML=`
+    <h3 style="color:#1a56a8">${p.topic}${p.score>0?`<span class="score">创新分 ${p.score}</span>`:''}</h3>
+    <div class="section"><h5>初始方案</h5><div class="md">${md(p.plan)}</div></div>
+    ${p.improved?`<div class="section"><h5>最新改进版（第 ${p.version} 次迭代）</h5><div class="md">${md(p.improved)}</div></div>`:''}
+    <div class="section"><h5>AI 分析报告</h5><div class="md" id="anaBox">${p.analysis?md(p.analysis):'<span style="color:#a0aec0">尚未分析</span>'}</div></div>
+    ${(p.versions||[]).length>1?`
+    <div class="section"><h5>多版本对比</h5>
+      <div class="compare">
+        <div><select id="vL" onchange="renderCompare()">${versionOpts}</select><div class="col" id="colL"></div></div>
+        <div><select id="vR" onchange="renderCompare()">${versionOpts}</select><div class="col" id="colR"></div></div>
+      </div></div>`:''}
+    <div class="toolbar">
+      <button class="green" id="aBtn" onclick="doAna(${id})">AI 分析</button>
+      <button class="orange" id="iBtn" onclick="doImp(${id})">迭代改进</button>
+      <button class="purple" onclick="exportMd()">导出 Markdown</button>
+      <button class="gray" onclick="window.print()">打印/PDF</button>
+      <button class="small" style="background:#e53e3e" onclick="doDel(${id})">删除</button>
+    </div>`;
+  if((p.versions||[]).length>1){
+    document.getElementById("vL").value=0;
+    document.getElementById("vR").value=p.version;
+    renderCompare();
+  }
+}
+function renderCompare(){
+  const vs=curData.versions||[];
+  const find=v=>(vs.find(x=>x.v==v)||{}).content||"";
+  document.getElementById("colL").innerHTML=md(find(document.getElementById("vL").value));
+  document.getElementById("colR").innerHTML=md(find(document.getElementById("vR").value));
+}
+async function doAna(id){
+  const b=document.getElementById("aBtn");
+  b.disabled=true;b.innerHTML='<span class="spinner"></span>';
+  await api("/api/analyze/"+id,"POST");
+  showPlan(id);
+}
+async function doImp(id){
+  const b=document.getElementById("iBtn");
+  b.disabled=true;b.innerHTML='<span class="spinner"></span>';
+  await api("/api/improve/"+id,"POST");
+  showPlan(id);
+}
+async function doDel(id){
+  if(!confirm("确定删除？"))return;
+  await api("/api/delete/"+id,"POST");cur=null;
+  document.getElementById("detail").innerHTML='<div class="empty">选择方案查看</div>';
+  loadList();
+}
+function exportMd(){
+  const p=curData;
+  let txt=`# ${p.topic}\n\n## 初始方案\n\n${p.plan}\n`;
+  if(p.improved)txt+=`\n## 改进版方案（第${p.version}次迭代）\n\n${p.improved}\n`;
+  if(p.analysis)txt+=`\n## AI分析报告\n\n${p.analysis}\n`;
+  const blob=new Blob([txt],{type:"text/markdown;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`${p.topic}_实验方案.md`;a.click();
+}
+loadList();
+</script>
+</body>
+</html>
