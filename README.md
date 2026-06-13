@@ -2,10 +2,11 @@
 
 本仓库包含两部分：
 
-- `docs/`：GitHub Pages 前端，提供“中学生物理创新实验 · AI 生成与分析平台”。
+- `ai/`：GitHub Pages 前端，提供“中学生物理创新实验 · AI 生成与分析平台”。
 - `backend/`：Flask 后端，负责调用大模型 API、保存方案、分析和迭代改进。
 
 在线访问（GitHub Pages 部署后）：`https://caimingye78.github.io/physicsexperiment/`
+AI 平台访问：`https://caimingye78.github.io/physicsexperiment/ai/`
 
 > 注意：GitHub Pages 只能托管静态网页，不能安全保存或运行 AI API Key。后端请部署到 Render、Railway 或自己的服务器，并把 API Key 放在环境变量中。
 
@@ -14,7 +15,7 @@
 - `backend/app.py` — Flask API 服务。
 - `backend/requirements.txt` — Python 依赖。
 - `backend/Procfile` — Render 等平台的启动命令。
-- `docs/index.html` — GitHub Pages 前端页面。
+- `ai/index.html` — GitHub Pages 上的 AI 平台页面。
 - `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流。
 
 ## 部署后端
@@ -35,7 +36,7 @@
 | `AI_API_KEY` | 在平台环境变量中填写，不要提交到 GitHub |
 | `AI_MODEL` | `deepseek-chat` |
 
-部署完成后，将 `docs/index.html` 中的 `API_BASE` 改成真实后端地址。
+部署完成后，将 `ai/index.html` 中的 `API_BASE` 改成真实后端地址。
 
 ## 旧版实验馆
 
