@@ -23,6 +23,9 @@
   button.small{padding:5px 10px;font-size:.8rem}
   .tags{margin:8px 0;font-size:.78rem;color:#718096}
   .tags span{cursor:pointer;color:#1a73e8;margin-right:10px}
+  .backend-box{display:flex;gap:8px;margin:12px 0 6px}
+  .backend-box input{font-size:.82rem}
+  .hint{font-size:.76rem;color:#718096;line-height:1.5;margin-bottom:8px}
   .item{padding:12px;border-bottom:1px solid #edf2f7;cursor:pointer;border-radius:8px}
   .item:hover,.item.active{background:#ebf4ff}
   .item h4{font-size:.92rem;color:#1a56a8}
@@ -66,6 +69,11 @@
       <span onclick="quick('凸透镜成像')">凸透镜成像</span>
       <span onclick="quick('自制乐器与声音')">声音</span>
     </div>
+    <div class="backend-box">
+      <input id="backendUrl" placeholder="后端地址，例如 https://xxx.onrender.com">
+      <button class="small" onclick="saveBackendUrl()">连接</button>
+    </div>
+    <div class="hint">AI 生成功能需要先部署 Flask 后端。地址保存后会自动用于本页面。</div>
     <div id="status"></div>
     <h4 style="margin:10px 0 6px;color:#4a5568">方案库 <span id="cnt"></span></h4>
     <div id="list"><div class="empty">还没有方案，输入主题生成第一个吧</div></div>
@@ -76,15 +84,30 @@
 
 <script>
 let cur = null;
-const API_BASE = "https://physicsexperiment-backend.onrender.com";
+const DEFAULT_API_BASE = "https://physicsexperiment-backend.onrender.com";
 const md = t => marked.parse(t || "");
 
+function apiBase() {
+  return (localStorage.getItem("physicsApiBase") || DEFAULT_API_BASE).replace(/\/+$/, "");
+}
+
+function saveBackendUrl() {
+  const v = document.getElementById("backendUrl").value.trim().replace(/\/+$/, "");
+  if (!v) return S("请输入后端地址");
+  localStorage.setItem("physicsApiBase", v);
+  S("后端地址已保存，正在重新连接...");
+  loadList();
+}
+
 async function api(u, m = "GET", b = null) {
-  const r = await fetch(API_BASE + u, {
+  const r = await fetch(apiBase() + u, {
     method: m,
     headers: {"Content-Type": "application/json"},
     body: b ? JSON.stringify(b) : null
   });
+  if (!r.ok) {
+    throw new Error(`后端返回 ${r.status}，请确认服务已经部署并正在运行`);
+  }
   const text = await r.text();
   try {
     return JSON.parse(text);
@@ -141,6 +164,8 @@ async function loadList() {
           ${p.i ? `<span class="badge b2">改进v${p.version}</span>` : ''}</h4>
         <div class="meta">${p.created}</div></div>`).join("");
   } catch (e) {
+    document.getElementById("cnt").textContent = "";
+    document.getElementById("list").innerHTML = '<div class="empty">后端还没连接，部署后端并填写地址后即可使用</div>';
     S("暂时无法连接后端：" + e.message);
   }
 }
@@ -190,6 +215,7 @@ async function doDel(id) {
   loadList();
 }
 
+document.getElementById("backendUrl").value = apiBase();
 loadList();
 </script>
 </body>

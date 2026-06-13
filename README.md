@@ -22,6 +22,10 @@ AI 平台访问：`https://caimingye78.github.io/physicsexperiment/ai/`
 
 以 Render 为例：
 
+方式一：在 Render 中选择本仓库的 `render.yaml` 作为 Blueprint，然后填写 `AI_API_KEY`。
+
+方式二：手动创建 Web Service：
+
 | 配置项 | 内容 |
 | --- | --- |
 | Root Directory | `backend` |
