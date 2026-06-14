@@ -68,18 +68,52 @@ def init_db():
     import_saved_plans_if_empty()
 
 
-def split_markdown_section(text, heading):
-    marker = f"## {heading}"
-    start = text.find(marker)
-    if start < 0:
+SAVED_PLAN_WRAPPER_HEADINGS = {
+    "plan": r"AI 生成方案",
+    "analysis": r"AI 分析报告",
+    "improved": r"改进版方案[^\n]*",
+    "history": r"历史版本",
+}
+
+
+def split_markdown_section(text, heading_pattern, stop_heading_patterns=None):
+    start_match = re.search(rf"^##\s+{heading_pattern}\s*$", text, re.M)
+    if not start_match:
         return ""
-    start = text.find("\n", start)
-    if start < 0:
-        return ""
-    next_heading = text.find("\n## ", start + 1)
-    if next_heading < 0:
-        next_heading = len(text)
-    return text[start:next_heading].strip()
+
+    start = start_match.end()
+    stop_candidates = []
+    for pattern in stop_heading_patterns or []:
+        stop_match = re.search(rf"^##\s+{pattern}\s*$", text[start:], re.M)
+        if stop_match:
+            stop_candidates.append(start + stop_match.start())
+
+    end = min(stop_candidates) if stop_candidates else len(text)
+    return text[start:end].strip()
+
+
+def parse_saved_versions(text, plan, improved, version):
+    history = split_markdown_section(text, SAVED_PLAN_WRAPPER_HEADINGS["history"])
+    if not history:
+        versions = [{"v": 0, "type": "初始方案", "content": plan}]
+        if improved:
+            versions.append({"v": version, "type": f"改进v{version}", "content": improved})
+        return versions
+
+    matches = list(re.finditer(r"^###\s+(.+?)\s+v(\d+)\s*$", history, re.M))
+    versions = []
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(history)
+        versions.append(
+            {
+                "v": int(match.group(2)),
+                "type": match.group(1).strip(),
+                "content": history[start:end].strip(),
+            }
+        )
+
+    return versions or [{"v": 0, "type": "初始方案", "content": plan}]
 
 
 def parse_saved_plan_markdown(text):
@@ -87,23 +121,29 @@ def parse_saved_plan_markdown(text):
     topic = title_match.group(1).strip() if title_match else "未命名方案"
     version_match = re.search(r"^- 版本：(\d+)\s*$", text, re.M)
     score_match = re.search(r"^- 创新性评分：(\d+)\s*$", text, re.M)
-    plan = split_markdown_section(text, "AI 生成方案")
-    analysis = split_markdown_section(text, "AI 分析报告")
-
-    improved = ""
-    improved_match = re.search(r"\n## 改进版方案[^\n]*\n", text)
-    if improved_match:
-        start = improved_match.end()
-        next_heading = text.find("\n## ", start)
-        if next_heading < 0:
-            next_heading = len(text)
-        improved = text[start:next_heading].strip()
+    plan = split_markdown_section(
+        text,
+        SAVED_PLAN_WRAPPER_HEADINGS["plan"],
+        [
+            SAVED_PLAN_WRAPPER_HEADINGS["analysis"],
+            SAVED_PLAN_WRAPPER_HEADINGS["improved"],
+            SAVED_PLAN_WRAPPER_HEADINGS["history"],
+        ],
+    )
+    analysis = split_markdown_section(
+        text,
+        SAVED_PLAN_WRAPPER_HEADINGS["analysis"],
+        [SAVED_PLAN_WRAPPER_HEADINGS["improved"], SAVED_PLAN_WRAPPER_HEADINGS["history"]],
+    )
+    improved = split_markdown_section(
+        text,
+        SAVED_PLAN_WRAPPER_HEADINGS["improved"],
+        [SAVED_PLAN_WRAPPER_HEADINGS["history"]],
+    )
 
     version = int(version_match.group(1)) if version_match else (1 if improved else 0)
     score = int(score_match.group(1)) if score_match else extract_score(analysis)
-    versions = [{"v": 0, "type": "初始方案", "content": plan}]
-    if improved:
-        versions.append({"v": version, "type": f"改进v{version}", "content": improved})
+    versions = parse_saved_versions(text, plan, improved, version)
 
     return {
         "topic": topic,
@@ -121,26 +161,61 @@ def import_saved_plans_if_empty():
     if not saved_dir.exists():
         return
 
-    count = db("SELECT COUNT(*) c FROM plans", one=True)
-    if count and count["c"] > 0:
-        return
-
     for path in sorted(saved_dir.glob("*.md")):
         try:
             item = parse_saved_plan_markdown(path.read_text(encoding="utf-8"))
-            db(
-                "INSERT INTO plans(topic, plan, analysis, improved, version, score, versions) "
-                "VALUES(?,?,?,?,?,?,?)",
-                (
-                    item["topic"],
-                    item["plan"],
-                    item["analysis"],
-                    item["improved"],
-                    item["version"],
-                    item["score"],
-                    item["versions"],
-                ),
+            existing = db(
+                "SELECT * FROM plans WHERE topic=? ORDER BY id DESC LIMIT 1",
+                (item["topic"],),
+                one=True,
             )
+            if not existing:
+                db(
+                    "INSERT INTO plans(topic, plan, analysis, improved, version, score, versions) "
+                    "VALUES(?,?,?,?,?,?,?)",
+                    (
+                        item["topic"],
+                        item["plan"],
+                        item["analysis"],
+                        item["improved"],
+                        item["version"],
+                        item["score"],
+                        item["versions"],
+                    ),
+                )
+                continue
+
+            plan = item["plan"] if len(item["plan"]) > len(existing["plan"] or "") else existing["plan"]
+            analysis = (
+                item["analysis"]
+                if len(item["analysis"]) > len(existing["analysis"] or "")
+                else existing["analysis"]
+            )
+            improved = (
+                item["improved"]
+                if len(item["improved"]) > len(existing["improved"] or "")
+                else existing["improved"]
+            )
+            versions = (
+                item["versions"]
+                if len(item["versions"]) > len(existing["versions"] or "[]")
+                else existing["versions"]
+            )
+            version = max(int(existing["version"] or 0), item["version"])
+            score = item["score"] or int(existing["score"] or 0)
+            if (
+                plan != existing["plan"]
+                or analysis != existing["analysis"]
+                or improved != existing["improved"]
+                or versions != existing["versions"]
+                or version != existing["version"]
+                or score != existing["score"]
+            ):
+                db(
+                    "UPDATE plans SET plan=?, analysis=?, improved=?, version=?, score=?, versions=? "
+                    "WHERE id=?",
+                    (plan, analysis, improved, version, score, versions, existing["id"]),
+                )
         except Exception as exc:
             print(f"导入历史方案失败：{path}: {exc}")
 
