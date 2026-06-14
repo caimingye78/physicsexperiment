@@ -220,7 +220,7 @@ async function showPlan(id) {
     <div class="toolbar">
       <button class="green" id="aBtn" onclick="doAna(${id})">AI 分析</button>
       <button class="orange" id="iBtn" onclick="doImp(${id})">迭代改进</button>
-      <button class="blue" id="hBtn" onclick="showHistory(${id})" ${count ? '' : 'disabled style="opacity:0.5"'}>📜 分析历史 (${count})</button>
+      <button class="blue" id="hBtn" onclick="showHistory(${id})">📜 分析历史 (${count})</button>
       <button class="small" style="background:#e53e3e" onclick="doDel(${id})">删除</button>
     </div>`;
 }
@@ -250,48 +250,59 @@ async function doImp(id) {
 }
 
 async function showHistory(id) {
-  const res = await api("/api/history/" + id);
-  if (!res.ok) {
-    S("获取历史记录失败: " + (res.msg || "未知错误"));
-    return;
-  }
-  
-  const detailEl = document.getElementById("detail");
-  let historyHtml = `
-    <h3 style="color:#1a56a8">${res.topic} - AI分析历史</h3>
-    <div class="detail-meta">共 ${res.total} 次分析记录</div>
-    <div style="margin-bottom: 20px;">
-      <button class="small" onclick="showPlan(${id})">← 返回方案详情</button>
-    </div>`;
-  
-  if (res.total === 0) {
-    historyHtml += '<div class="empty">暂无分析历史记录</div>';
-  } else {
-    historyHtml += `<div class="history-container">`;
+  console.log("showHistory被调用，ID:", id);
+  try {
+    S("正在加载分析历史...");
+    const res = await api("/api/history/" + id);
+    console.log("历史记录API响应:", res);
     
-    res.history.forEach((record, index) => {
-      const timeLabel = record.is_current ? "📌 最新" : record.time;
-      const badgeStyle = record.is_current ? 
-        'style="background:#3182ce;color:white"' : 
-        'style="background:#e2e8f0"';
-      
+    const detailEl = document.getElementById("detail");
+    let historyHtml = `
+      <h3 style="color:#1a56a8">${res.topic || '未知方案'} - AI分析历史</h3>
+      <div class="detail-meta">共 ${res.total || 0} 次分析记录</div>
+      <div style="margin-bottom: 20px;">
+        <button class="small" onclick="showPlan(${id})">← 返回方案详情</button>
+      </div>`;
+    
+    if (!res.total || res.total === 0) {
       historyHtml += `
-        <div class="history-item ${record.is_current ? 'current' : ''}">
-          <div class="history-header">
-            <span class="history-badge" ${badgeStyle}>第 ${record.index} 次分析</span>
-            <span class="history-time">${timeLabel}</span>
-            <span class="history-score">${record.score} 分</span>
-          </div>
-          <div class="history-content">
-            ${md(record.analysis)}
-          </div>
+        <div class="empty">
+          <p>暂无分析历史记录</p>
+          <p style="font-size: 0.9rem; margin-top: 10px; color: #718096;">
+            提示：点击"AI分析"按钮开始第一次分析，分析历史会自动保存
+          </p>
         </div>`;
-    });
+    } else {
+      historyHtml += `<div class="history-container">`;
+      
+      (res.history || []).forEach((record, index) => {
+        const timeLabel = record.is_current ? "📌 最新" : (record.time || "未知时间");
+        const badgeStyle = record.is_current ? 
+          'style="background:#3182ce;color:white"' : 
+          'style="background:#e2e8f0"';
+        const score = record.score || 0;
+        
+        historyHtml += `
+          <div class="history-item ${record.is_current ? 'current' : ''}">
+            <div class="history-header">
+              <span class="history-badge" ${badgeStyle}>第 ${record.index || (index + 1)} 次分析</span>
+              <span class="history-time">${timeLabel}</span>
+              <span class="history-score">${score} 分</span>
+            </div>
+            <div class="history-content">
+              ${md(record.analysis || '无分析内容')}
+            </div>
+          </div>`;
+      });
+      
+      historyHtml += `</div>`;
+    }
     
-    historyHtml += `</div>`;
+    detailEl.innerHTML = historyHtml;
+  } catch (error) {
+    S("获取历史记录失败: " + error.message);
+    console.error("历史记录错误:", error);
   }
-  
-  detailEl.innerHTML = historyHtml;
 }
 
 async function doDel(id) {
