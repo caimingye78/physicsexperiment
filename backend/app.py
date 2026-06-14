@@ -50,6 +50,7 @@ def init_db():
     migrations = {
         "score": "ALTER TABLE plans ADD COLUMN score INTEGER DEFAULT 0",
         "versions": "ALTER TABLE plans ADD COLUMN versions TEXT DEFAULT '[]'",
+        "github_path": "ALTER TABLE plans ADD COLUMN github_path TEXT DEFAULT ''",
     }
     for column, sql in migrations.items():
         if column not in existing:
@@ -164,6 +165,7 @@ def import_saved_plans_if_empty():
     for path in sorted(saved_dir.glob("*.md")):
         try:
             item = parse_saved_plan_markdown(path.read_text(encoding="utf-8"))
+            github_path = f"{GITHUB_SAVE_PATH}/{path.name}"
             existing = db(
                 "SELECT * FROM plans WHERE topic=? ORDER BY id DESC LIMIT 1",
                 (item["topic"],),
@@ -171,8 +173,8 @@ def import_saved_plans_if_empty():
             )
             if not existing:
                 db(
-                    "INSERT INTO plans(topic, plan, analysis, improved, version, score, versions) "
-                    "VALUES(?,?,?,?,?,?,?)",
+                    "INSERT INTO plans(topic, plan, analysis, improved, version, score, versions, github_path) "
+                    "VALUES(?,?,?,?,?,?,?,?)",
                     (
                         item["topic"],
                         item["plan"],
@@ -181,6 +183,7 @@ def import_saved_plans_if_empty():
                         item["version"],
                         item["score"],
                         item["versions"],
+                        github_path,
                     ),
                 )
                 continue
@@ -203,6 +206,7 @@ def import_saved_plans_if_empty():
             )
             version = max(int(existing["version"] or 0), item["version"])
             score = item["score"] or int(existing["score"] or 0)
+            saved_path = existing["github_path"] or github_path
             if (
                 plan != existing["plan"]
                 or analysis != existing["analysis"]
@@ -210,11 +214,12 @@ def import_saved_plans_if_empty():
                 or versions != existing["versions"]
                 or version != existing["version"]
                 or score != existing["score"]
+                or saved_path != existing["github_path"]
             ):
                 db(
-                    "UPDATE plans SET plan=?, analysis=?, improved=?, version=?, score=?, versions=? "
+                    "UPDATE plans SET plan=?, analysis=?, improved=?, version=?, score=?, versions=?, github_path=? "
                     "WHERE id=?",
-                    (plan, analysis, improved, version, score, versions, existing["id"]),
+                    (plan, analysis, improved, version, score, versions, saved_path, existing["id"]),
                 )
         except Exception as exc:
             print(f"导入历史方案失败：{path}: {exc}")
@@ -280,8 +285,12 @@ def slugify_topic(topic):
     return slug[:48] or "physics-plan"
 
 
+def row_get(row, key, default=""):
+    return row[key] if row and key in row.keys() else default
+
+
 def github_file_path(plan):
-    return f"{GITHUB_SAVE_PATH}/{plan['id']:04d}-{slugify_topic(plan['topic'])}.md"
+    return row_get(plan, "github_path") or f"{GITHUB_SAVE_PATH}/{plan['id']:04d}-{slugify_topic(plan['topic'])}.md"
 
 
 def github_headers():
@@ -350,6 +359,7 @@ def save_plan_to_github(pid, reason):
         return {"ok": False, "msg": f"保存到 GitHub 失败：{saved.status_code} {saved.text[:200]}"}
 
     data = saved.json().get("content", {})
+    db("UPDATE plans SET github_path=? WHERE id=?", (path, pid))
     return {"ok": True, "path": path, "url": data.get("html_url")}
 
 
