@@ -30,6 +30,7 @@
   .item:hover,.item.active{background:#ebf4ff}
   .item h4{font-size:.92rem;color:#1a56a8}
   .item .meta{font-size:.74rem;color:#718096;margin-top:3px}
+  .detail-meta{font-size:.82rem;color:#718096;margin-top:6px}
   .badge{display:inline-block;font-size:.68rem;padding:1px 8px;border-radius:10px;margin-left:6px;color:#fff}
   .b1{background:#38a169}
   .b2{background:#ed8936}
@@ -122,6 +123,10 @@ async function api(u, m = "GET", b = null) {
 
 const S = m => document.getElementById("status").textContent = m;
 
+function analysisCount(p) {
+  return Number(p.analysis_count || (p.a || p.analysis ? 1 : 0) || 0);
+}
+
 function githubStatus(github) {
   if (!github) return "";
   if (github.ok && github.url) return `，已保存到 GitHub：${github.path}`;
@@ -176,7 +181,7 @@ async function loadList() {
     box.innerHTML = ps.map(p => `
       <div class="item ${p.id === cur ? 'active' : ''}" onclick="showPlan(${p.id})">
         <h4>${p.topic}
-          ${p.a ? '<span class="badge b1">已分析</span>' : ''}
+          ${analysisCount(p) ? `<span class="badge b1">分析${analysisCount(p)}次</span>` : ''}
           ${p.i ? `<span class="badge b2">改进v${p.version}</span>` : ''}</h4>
         <div class="meta">${p.created}</div></div>`).join("");
   } catch (e) {
@@ -190,12 +195,14 @@ async function showPlan(id) {
   cur = id;
   loadList();
   const p = await api("/api/get/" + id);
+  const count = analysisCount(p);
   document.getElementById("detail").innerHTML = `
     <h3 style="color:#1a56a8">${p.topic}</h3>
+    <div class="detail-meta">AI分析 ${count} 次 ｜ 迭代改进 ${p.version || 0} 次</div>
     <div class="section"><h5>AI 生成方案</h5><div class="md">${md(p.plan)}</div></div>
     ${p.improved ? `<div class="section"><h5>改进版方案（第 ${p.version} 次迭代）</h5>
       <div class="md">${md(p.improved)}</div></div>` : ''}
-    <div class="section"><h5>AI 分析报告</h5>
+    <div class="section"><h5>AI 分析报告${count ? `（已分析 ${count} 次）` : ''}</h5>
       <div class="md" id="anaBox">${p.analysis ? md(p.analysis) : '<span style="color:#a0aec0">尚未分析</span>'}</div></div>
     <div class="toolbar">
       <button class="green" id="aBtn" onclick="doAna(${id})">AI 分析</button>
@@ -209,11 +216,14 @@ async function doAna(id) {
   b.disabled = true;
   b.innerHTML = '<span class="spinner"></span> 分析中...';
   const res = await api("/api/analyze/" + id, "POST");
-  if (res.ok) document.getElementById("anaBox").innerHTML = md(res.analysis);
-  S(res.ok ? "分析完成" + githubStatus(res.github) : (res.msg || "分析失败"));
-  b.disabled = false;
-  b.textContent = "AI 分析";
-  loadList();
+  if (res.ok) {
+    await showPlan(id);
+    S(`分析完成，累计 ${res.analysis_count || 1} 次` + githubStatus(res.github));
+  } else {
+    S(res.msg || "分析失败");
+    b.disabled = false;
+    b.textContent = "AI 分析";
+  }
 }
 
 async function doImp(id) {

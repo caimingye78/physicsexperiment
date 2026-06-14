@@ -31,6 +31,7 @@
   .rank-num{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;color:#fff;font-weight:bold;margin-right:8px;font-size:.8rem}
   .r1{background:#f6c700}.r2{background:#b0b8c4}.r3{background:#cd7f32}.rx{background:#a0aec0}
   .score{float:right;background:#38a169;color:#fff;padding:2px 10px;border-radius:10px;font-size:.8rem}
+  .detail-meta{font-size:.82rem;color:#718096;margin-top:6px}
   .section{margin-top:16px}
   .section h5{color:#fff;background:#4a5568;padding:6px 12px;border-radius:6px;font-size:.9rem}
   .md{padding:12px;background:#f7fafc;border-radius:8px;font-size:.9rem;line-height:1.75;margin-top:6px}
@@ -83,6 +84,7 @@
 const API_BASE = "";
 let cur=null, curData=null;
 const md=t=>marked.parse(t||"");
+function analysisCount(p){return Number(p.analysis_count||(p.a||p.analysis?1:0)||0);}
 async function api(u,m="GET",b=null){
   const r=await fetch(API_BASE+u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):null});
   const t=await r.text();
@@ -117,7 +119,7 @@ async function loadList(){
   box.innerHTML=ps.map(p=>`
     <div class="item ${p.id===cur?'active':''}" onclick="showPlan(${p.id})">
       <h4>${p.topic}
-        ${p.a?'<span class="badge b1">已分析</span>':''}
+        ${analysisCount(p)?`<span class="badge b1">分析${analysisCount(p)}次</span>`:''}
         ${p.i?`<span class="badge b2">改进v${p.version}</span>`:''}
         ${p.score>0?`<span class="badge b3">${p.score}分</span>`:''}</h4>
       <div class="meta">${p.created}</div></div>`).join("");
@@ -137,12 +139,14 @@ async function showPlan(id){
   cur=id;
   const p=await api("/api/get/"+id);curData=p;
   loadList();
+  const count=analysisCount(p);
   const versionOpts=(p.versions||[]).map(v=>`<option value="${v.v}">${v.type}</option>`).join("");
   document.getElementById("detail").innerHTML=`
     <h3 style="color:#1a56a8">${p.topic}${p.score>0?`<span class="score">创新分 ${p.score}</span>`:''}</h3>
+    <div class="detail-meta">AI分析 ${count} 次 ｜ 迭代改进 ${p.version||0} 次</div>
     <div class="section"><h5>初始方案</h5><div class="md">${md(p.plan)}</div></div>
     ${p.improved?`<div class="section"><h5>最新改进版（第 ${p.version} 次迭代）</h5><div class="md">${md(p.improved)}</div></div>`:''}
-    <div class="section"><h5>AI 分析报告</h5><div class="md" id="anaBox">${p.analysis?md(p.analysis):'<span style="color:#a0aec0">尚未分析</span>'}</div></div>
+    <div class="section"><h5>AI 分析报告${count?`（已分析 ${count} 次）`:''}</h5><div class="md" id="anaBox">${p.analysis?md(p.analysis):'<span style="color:#a0aec0">尚未分析</span>'}</div></div>
     ${(p.versions||[]).length>1?`
     <div class="section"><h5>多版本对比</h5>
       <div class="compare">

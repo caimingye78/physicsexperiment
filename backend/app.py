@@ -40,8 +40,10 @@ def init_db():
         analysis TEXT DEFAULT '',
         improved TEXT DEFAULT '',
         version INTEGER DEFAULT 0,
+        analysis_count INTEGER DEFAULT 0,
         score INTEGER DEFAULT 0,
         versions TEXT DEFAULT '[]',
+        github_path TEXT DEFAULT '',
         created TEXT DEFAULT (datetime('now','localtime'))
     )"""
     )
@@ -51,11 +53,13 @@ def init_db():
         "score": "ALTER TABLE plans ADD COLUMN score INTEGER DEFAULT 0",
         "versions": "ALTER TABLE plans ADD COLUMN versions TEXT DEFAULT '[]'",
         "github_path": "ALTER TABLE plans ADD COLUMN github_path TEXT DEFAULT ''",
+        "analysis_count": "ALTER TABLE plans ADD COLUMN analysis_count INTEGER DEFAULT 0",
     }
     for column, sql in migrations.items():
         if column not in existing:
             cur.execute(sql)
 
+    cur.execute("UPDATE plans SET analysis_count=1 WHERE analysis!='' AND analysis_count=0")
     cur.execute("SELECT id, plan, versions FROM plans")
     for pid, plan, versions in cur.fetchall():
         if not versions or versions == "[]":
@@ -122,6 +126,7 @@ def parse_saved_plan_markdown(text):
     topic = title_match.group(1).strip() if title_match else "未命名方案"
     version_match = re.search(r"^- 版本：(\d+)\s*$", text, re.M)
     score_match = re.search(r"^- 创新性评分：(\d+)\s*$", text, re.M)
+    analysis_count_match = re.search(r"^- AI分析次数：(\d+)\s*$", text, re.M)
     plan = split_markdown_section(
         text,
         SAVED_PLAN_WRAPPER_HEADINGS["plan"],
@@ -144,6 +149,11 @@ def parse_saved_plan_markdown(text):
 
     version = int(version_match.group(1)) if version_match else (1 if improved else 0)
     score = int(score_match.group(1)) if score_match else extract_score(analysis)
+    analysis_count = (
+        int(analysis_count_match.group(1))
+        if analysis_count_match
+        else (1 if analysis else 0)
+    )
     versions = parse_saved_versions(text, plan, improved, version)
 
     return {
@@ -152,6 +162,7 @@ def parse_saved_plan_markdown(text):
         "analysis": analysis,
         "improved": improved,
         "version": version,
+        "analysis_count": analysis_count,
         "score": score,
         "versions": json.dumps(versions, ensure_ascii=False),
     }
@@ -173,14 +184,15 @@ def import_saved_plans_if_empty():
             )
             if not existing:
                 db(
-                    "INSERT INTO plans(topic, plan, analysis, improved, version, score, versions, github_path) "
-                    "VALUES(?,?,?,?,?,?,?,?)",
+                    "INSERT INTO plans(topic, plan, analysis, improved, version, analysis_count, score, versions, github_path) "
+                    "VALUES(?,?,?,?,?,?,?,?,?)",
                     (
                         item["topic"],
                         item["plan"],
                         item["analysis"],
                         item["improved"],
                         item["version"],
+                        item["analysis_count"],
                         item["score"],
                         item["versions"],
                         github_path,
@@ -205,6 +217,9 @@ def import_saved_plans_if_empty():
                 else existing["versions"]
             )
             version = max(int(existing["version"] or 0), item["version"])
+            analysis_count = max(int(existing["analysis_count"] or 0), item["analysis_count"])
+            if analysis and analysis_count == 0:
+                analysis_count = 1
             score = item["score"] or int(existing["score"] or 0)
             saved_path = existing["github_path"] or github_path
             if (
@@ -213,13 +228,24 @@ def import_saved_plans_if_empty():
                 or improved != existing["improved"]
                 or versions != existing["versions"]
                 or version != existing["version"]
+                or analysis_count != existing["analysis_count"]
                 or score != existing["score"]
                 or saved_path != existing["github_path"]
             ):
                 db(
-                    "UPDATE plans SET plan=?, analysis=?, improved=?, version=?, score=?, versions=?, github_path=? "
+                    "UPDATE plans SET plan=?, analysis=?, improved=?, version=?, analysis_count=?, score=?, versions=?, github_path=? "
                     "WHERE id=?",
-                    (plan, analysis, improved, version, score, versions, saved_path, existing["id"]),
+                    (
+                        plan,
+                        analysis,
+                        improved,
+                        version,
+                        analysis_count,
+                        score,
+                        versions,
+                        saved_path,
+                        existing["id"],
+                    ),
                 )
         except Exception as exc:
             print(f"导入历史方案失败：{path}: {exc}")
@@ -304,12 +330,14 @@ def github_headers():
 def build_plan_markdown(plan):
     saved_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     versions = json.loads(plan["versions"] or "[]")
+    analysis_count = int(row_get(plan, "analysis_count", 0) or 0)
     parts = [
         f"# {plan['topic']}",
         "",
         f"- 方案 ID：{plan['id']}",
         f"- 保存时间：{saved_at}",
         f"- 版本：{plan['version']}",
+        f"- AI分析次数：{analysis_count}",
         f"- 创新性评分：{plan['score'] or 0}",
         "",
         "## AI 生成方案",
@@ -428,9 +456,21 @@ def analyze(pid):
     base = plan["improved"] or plan["plan"]
     analysis = call_ai(P_ANA.format(plan=base))
     score = extract_score(analysis)
-    db("UPDATE plans SET analysis=?, score=? WHERE id=?", (analysis, score, pid))
+    analysis_count = int(row_get(plan, "analysis_count", 0) or 0) + 1
+    db(
+        "UPDATE plans SET analysis=?, analysis_count=?, score=? WHERE id=?",
+        (analysis, analysis_count, score, pid),
+    )
     github = save_plan_to_github(pid, "Save physics plan analysis")
-    return jsonify({"ok": True, "analysis": analysis, "score": score, "github": github})
+    return jsonify(
+        {
+            "ok": True,
+            "analysis": analysis,
+            "analysis_count": analysis_count,
+            "score": score,
+            "github": github,
+        }
+    )
 
 
 @app.route("/api/improve/<int:pid>", methods=["POST"])
@@ -440,26 +480,46 @@ def improve(pid):
         return jsonify({"ok": False, "msg": "方案不存在"})
 
     base = plan["improved"] or plan["plan"]
+    generated_analysis = not bool(plan["analysis"])
     analysis = plan["analysis"] or call_ai(P_ANA.format(plan=base))
     improved = call_ai(P_IMP.format(plan=base, analysis=analysis))
     new_version = plan["version"] + 1
+    analysis_count = int(row_get(plan, "analysis_count", 0) or 0)
+    if generated_analysis:
+        analysis_count = max(analysis_count, 1)
     score = extract_score(analysis)
     versions = json.loads(plan["versions"] or "[]")
     versions.append({"v": new_version, "type": f"改进v{new_version}", "content": improved})
 
     db(
-        "UPDATE plans SET improved=?, analysis=?, version=?, score=?, versions=? WHERE id=?",
-        (improved, analysis, new_version, score, json.dumps(versions, ensure_ascii=False), pid),
+        "UPDATE plans SET improved=?, analysis=?, version=?, analysis_count=?, score=?, versions=? WHERE id=?",
+        (
+            improved,
+            analysis,
+            new_version,
+            analysis_count,
+            score,
+            json.dumps(versions, ensure_ascii=False),
+            pid,
+        ),
     )
     github = save_plan_to_github(pid, "Save improved physics plan")
-    return jsonify({"ok": True, "improved": improved, "version": new_version, "github": github})
+    return jsonify(
+        {
+            "ok": True,
+            "improved": improved,
+            "version": new_version,
+            "analysis_count": analysis_count,
+            "github": github,
+        }
+    )
 
 
 @app.route("/api/list")
 def list_plans():
     import_saved_plans_if_empty()
     rows = db(
-        "SELECT id,topic,version,score,created,(analysis!='') a,(improved!='') i "
+        "SELECT id,topic,version,analysis_count,score,created,(analysis!='') a,(improved!='') i "
         "FROM plans ORDER BY id DESC"
     )
     return jsonify([dict(row) for row in rows])
