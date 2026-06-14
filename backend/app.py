@@ -41,6 +41,7 @@ def init_db():
         improved TEXT DEFAULT '',
         version INTEGER DEFAULT 0,
         analysis_count INTEGER DEFAULT 0,
+        analysis_history TEXT DEFAULT '[]',
         score INTEGER DEFAULT 0,
         versions TEXT DEFAULT '[]',
         github_path TEXT DEFAULT '',
@@ -54,6 +55,7 @@ def init_db():
         "versions": "ALTER TABLE plans ADD COLUMN versions TEXT DEFAULT '[]'",
         "github_path": "ALTER TABLE plans ADD COLUMN github_path TEXT DEFAULT ''",
         "analysis_count": "ALTER TABLE plans ADD COLUMN analysis_count INTEGER DEFAULT 0",
+        "analysis_history": "ALTER TABLE plans ADD COLUMN analysis_history TEXT DEFAULT '[]'",
     }
     for column, sql in migrations.items():
         if column not in existing:
@@ -457,9 +459,28 @@ def analyze(pid):
     analysis = call_ai(P_ANA.format(plan=base))
     score = extract_score(analysis)
     analysis_count = int(row_get(plan, "analysis_count", 0) or 0) + 1
+    
+    # 获取现有的分析历史记录
+    existing_history = json.loads(plan.get("analysis_history", "[]") or "[]")
+    
+    # 创建新的历史记录条目
+    new_history_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "analysis": analysis,
+        "analysis_count": analysis_count,
+        "score": score
+    }
+    
+    # 将新条目添加到历史记录（最新的在最前面）
+    existing_history.insert(0, new_history_entry)
+    
+    # 只保留最近10次分析记录，避免数据库过大
+    if len(existing_history) > 10:
+        existing_history = existing_history[:10]
+    
     db(
-        "UPDATE plans SET analysis=?, analysis_count=?, score=? WHERE id=?",
-        (analysis, analysis_count, score, pid),
+        "UPDATE plans SET analysis=?, analysis_count=?, score=?, analysis_history=? WHERE id=?",
+        (analysis, analysis_count, score, json.dumps(existing_history, ensure_ascii=False), pid),
     )
     github = save_plan_to_github(pid, "Save physics plan analysis")
     return jsonify(
@@ -532,6 +553,43 @@ def rank():
         "WHERE score>0 ORDER BY score DESC, version DESC, id DESC"
     )
     return jsonify([dict(row) for row in rows])
+
+
+@app.route("/api/history/<int:pid>")
+def get_analysis_history(pid):
+    """获取某个方案的分析历史记录"""
+    plan = db("SELECT id, topic, analysis_history FROM plans WHERE id=?", (pid,), one=True)
+    if not plan:
+        return jsonify({"ok": False, "msg": "方案不存在"})
+    
+    # 解析历史记录，如果不存在则返回空列表
+    history = json.loads(plan.get("analysis_history", "[]") or "[]")
+    
+    # 格式化和美化历史记录
+    formatted_history = []
+    for i, record in enumerate(history):
+        try:
+            # 解析时间戳
+            timestamp = datetime.fromisoformat(record.get("timestamp", ""))
+            formatted_time = timestamp.strftime("%Y-%m-%d %H:%M")
+        except:
+            formatted_time = "未知时间"
+        
+        formatted_history.append({
+            "index": i + 1,
+            "time": formatted_time,
+            "analysis": record.get("analysis", ""),
+            "analysis_count": record.get("analysis_count", 0),
+            "score": record.get("score", 0),
+            "is_current": i == 0  # 第一条是最新的
+        })
+    
+    return jsonify({
+        "ok": True,
+        "topic": plan["topic"],
+        "history": formatted_history,
+        "total": len(formatted_history)
+    })
 
 
 @app.route("/api/get/<int:pid>")

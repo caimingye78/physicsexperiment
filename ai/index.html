@@ -45,9 +45,22 @@
   .md ul,.md ol{padding-left:22px}
   .md code{background:#edf2f7;padding:1px 4px;border-radius:3px}
   .toolbar{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  button.blue{background:#3182ce}
   #status{font-size:.85rem;color:#e53e3e;margin-top:8px;min-height:1.2em}
   .empty{color:#a0aec0;text-align:center;padding:40px 0}
   .spinner{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+  
+  /* 历史记录样式 */
+  .history-container{margin-top:16px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+  .history-item{padding:16px;border-bottom:1px solid #e2e8f0}
+  .history-item:last-child{border-bottom:none}
+  .history-item.current{background:#f0f9ff}
+  .history-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .history-badge{font-size:.75rem;padding:2px 10px;border-radius:10px;font-weight:bold}
+  .history-time{font-size:.8rem;color:#4a5568}
+  .history-score{font-size:.75rem;background:#48bb78;color:white;padding:1px 8px;border-radius:8px}
+  .history-content{padding:12px;background:#f7fafc;border-radius:8px;font-size:.9rem;line-height:1.6}
+  
   @keyframes spin{to{transform:rotate(360deg)}}
   @media(max-width:800px){.container{grid-template-columns:1fr}.gen-box{flex-direction:column}}
 </style>
@@ -207,6 +220,7 @@ async function showPlan(id) {
     <div class="toolbar">
       <button class="green" id="aBtn" onclick="doAna(${id})">AI 分析</button>
       <button class="orange" id="iBtn" onclick="doImp(${id})">迭代改进</button>
+      <button class="blue" id="hBtn" onclick="showHistory(${id})" ${count ? '' : 'disabled style="opacity:0.5"'}>📜 分析历史 (${count})</button>
       <button class="small" style="background:#e53e3e" onclick="doDel(${id})">删除</button>
     </div>`;
 }
@@ -233,6 +247,51 @@ async function doImp(id) {
   const res = await api("/api/improve/" + id, "POST");
   S(res.ok ? "改进完成" + githubStatus(res.github) : (res.msg || "改进失败"));
   showPlan(id);
+}
+
+async function showHistory(id) {
+  const res = await api("/api/history/" + id);
+  if (!res.ok) {
+    S("获取历史记录失败: " + (res.msg || "未知错误"));
+    return;
+  }
+  
+  const detailEl = document.getElementById("detail");
+  let historyHtml = `
+    <h3 style="color:#1a56a8">${res.topic} - AI分析历史</h3>
+    <div class="detail-meta">共 ${res.total} 次分析记录</div>
+    <div style="margin-bottom: 20px;">
+      <button class="small" onclick="showPlan(${id})">← 返回方案详情</button>
+    </div>`;
+  
+  if (res.total === 0) {
+    historyHtml += '<div class="empty">暂无分析历史记录</div>';
+  } else {
+    historyHtml += `<div class="history-container">`;
+    
+    res.history.forEach((record, index) => {
+      const timeLabel = record.is_current ? "📌 最新" : record.time;
+      const badgeStyle = record.is_current ? 
+        'style="background:#3182ce;color:white"' : 
+        'style="background:#e2e8f0"';
+      
+      historyHtml += `
+        <div class="history-item ${record.is_current ? 'current' : ''}">
+          <div class="history-header">
+            <span class="history-badge" ${badgeStyle}>第 ${record.index} 次分析</span>
+            <span class="history-time">${timeLabel}</span>
+            <span class="history-score">${record.score} 分</span>
+          </div>
+          <div class="history-content">
+            ${md(record.analysis)}
+          </div>
+        </div>`;
+    });
+    
+    historyHtml += `</div>`;
+  }
+  
+  detailEl.innerHTML = historyHtml;
 }
 
 async function doDel(id) {
