@@ -563,7 +563,8 @@ def analyze(pid):
     analysis_count = int(row_get(plan, "analysis_count", 0) or 0) + 1
     
     # 获取现有的分析历史记录
-    existing_history = json.loads(plan.get("analysis_history", "[]") or "[]")
+    analysis_history_str = plan["analysis_history"] if plan["analysis_history"] else "[]"
+    existing_history = json.loads(analysis_history_str)
     
     # 创建新的历史记录条目
     new_history_entry = {
@@ -665,24 +666,29 @@ def get_analysis_history(pid):
         return jsonify({"ok": False, "msg": "方案不存在"})
     
     # 解析历史记录，如果不存在则返回空列表
-    history = json.loads(plan.get("analysis_history", "[]") or "[]")
+    analysis_history_str = plan["analysis_history"] if plan["analysis_history"] else "[]"
+    history = json.loads(analysis_history_str)
     
     # 格式化和美化历史记录
     formatted_history = []
     for i, record in enumerate(history):
         try:
             # 解析时间戳
-            timestamp = datetime.fromisoformat(record.get("timestamp", ""))
-            formatted_time = timestamp.strftime("%Y-%m-%d %H:%M")
+            timestamp_str = record["timestamp"] if "timestamp" in record else ""
+            if timestamp_str:
+                timestamp = datetime.fromisoformat(timestamp_str)
+                formatted_time = timestamp.strftime("%Y-%m-%d %H:%M")
+            else:
+                formatted_time = "未知时间"
         except:
             formatted_time = "未知时间"
         
         formatted_history.append({
             "index": i + 1,
             "time": formatted_time,
-            "analysis": record.get("analysis", ""),
-            "analysis_count": record.get("analysis_count", 0),
-            "score": record.get("score", 0),
+            "analysis": record["analysis"] if "analysis" in record else "",
+            "analysis_count": record["analysis_count"] if "analysis_count" in record else 0,
+            "score": record["score"] if "score" in record else 0,
             "is_current": i == 0  # 第一条是最新的
         })
     
@@ -700,7 +706,8 @@ def get_plan(pid):
     if not plan:
         return jsonify({})
     data = dict(plan)
-    data["versions"] = json.loads(data.get("versions") or "[]")
+    versions_str = plan["versions"] if plan["versions"] else "[]"
+    data["versions"] = json.loads(versions_str)
     return jsonify(data)
 
 
