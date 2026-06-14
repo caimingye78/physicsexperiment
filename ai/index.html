@@ -250,58 +250,144 @@ async function doImp(id) {
 }
 
 async function showHistory(id) {
-  console.log("showHistory被调用，ID:", id);
+  console.log("📜 showHistory被调用，ID:", id);
   try {
+    // 清除当前选择
+    cur = null;
+    
+    // 更新状态提示
     S("正在加载分析历史...");
+    
+    // 获取历史记录数据
     const res = await api("/api/history/" + id);
-    console.log("历史记录API响应:", res);
+    console.log("📊 历史记录API响应:", res);
     
     const detailEl = document.getElementById("detail");
+    
+    // 创建更丰富的历史记录界面
     let historyHtml = `
-      <h3 style="color:#1a56a8">${res.topic || '未知方案'} - AI分析历史</h3>
-      <div class="detail-meta">共 ${res.total || 0} 次分析记录</div>
-      <div style="margin-bottom: 20px;">
-        <button class="small" onclick="showPlan(${id})">← 返回方案详情</button>
+      <div style="margin-bottom: 24px;">
+        <button class="small" onclick="showPlan(${id})" style="margin-bottom: 16px;">
+          ← 返回方案详情
+        </button>
+        <h3 style="color:#1a56a8; margin-top: 0;">📜 ${res.topic || '未知方案'} - AI分析历史</h3>
+        <div class="detail-meta" style="background: #f0f9ff; padding: 8px 12px; border-radius: 8px;">
+          📊 共 ${res.total || 0} 次分析记录 | 📅 最近更新: ${new Date().toLocaleDateString()}
+        </div>
       </div>`;
     
     if (!res.total || res.total === 0) {
       historyHtml += `
-        <div class="empty">
-          <p>暂无分析历史记录</p>
-          <p style="font-size: 0.9rem; margin-top: 10px; color: #718096;">
-            提示：点击"AI分析"按钮开始第一次分析，分析历史会自动保存
+        <div class="empty" style="padding: 40px 20px; text-align: center;">
+          <div style="font-size: 48px; color: #cbd5e0; margin-bottom: 16px;">📝</div>
+          <h4 style="color: #4a5568; margin-bottom: 12px;">暂无分析历史记录</h4>
+          <p style="color: #718096; line-height: 1.6; max-width: 400px; margin: 0 auto;">
+            这个方案还没有进行过AI分析。<br>
+            点击"AI分析"按钮开始第一次分析，分析历史会自动保存到这里。
           </p>
+          <div style="margin-top: 20px;">
+            <button class="green" onclick="doAna(${id})" style="padding: 10px 24px;">
+              🚀 开始第一次AI分析
+            </button>
+          </div>
         </div>`;
     } else {
-      historyHtml += `<div class="history-container">`;
+      historyHtml += `
+        <div style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
+          <div style="flex: 1;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <span style="background: #e6f4ea; color: #1e8e3e; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">
+                📈 平均分: ${Math.round((res.history.reduce((sum, r) => sum + (r.score || 0), 0) / res.total) * 10) / 10}
+              </span>
+              <span style="background: #e8f0fe; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">
+                ⏱️ 最早记录: ${res.history[res.history.length-1]?.time || '未知'}
+              </span>
+              <span style="background: #fce8e6; color: #d93025; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">
+                🔥 最新记录: ${res.history[0]?.time || '刚刚'}
+              </span>
+            </div>
+          </div>
+          <button class="small" onclick="showPlan(${id})" style="white-space: nowrap;">
+            🔄 刷新
+          </button>
+        </div>
+        
+        <div class="history-container">`;
       
       (res.history || []).forEach((record, index) => {
-        const timeLabel = record.is_current ? "📌 最新" : (record.time || "未知时间");
+        const timeLabel = record.is_current ? 
+          `📌 最新 (${record.time || '刚刚'})` : 
+          (record.time || "未知时间");
+        
         const badgeStyle = record.is_current ? 
-          'style="background:#3182ce;color:white"' : 
-          'style="background:#e2e8f0"';
+          'style="background:linear-gradient(135deg,#3182ce,#6c5ce7);color:white;box-shadow:0 2px 8px rgba(49,130,206,0.3)"' : 
+          'style="background:#e2e8f0;color:#4a5568"';
+        
         const score = record.score || 0;
+        const scoreColor = score >= 8 ? '#1e8e3e' : score >= 6 ? '#fbbc05' : '#ea4335';
         
         historyHtml += `
-          <div class="history-item ${record.is_current ? 'current' : ''}">
+          <div class="history-item ${record.is_current ? 'current' : ''}" style="position: relative;">
+            ${record.is_current ? '<div style="position:absolute;left:-8px;top:16px;width:4px;height:calc(100% - 32px);background:linear-gradient(180deg,#3182ce,#6c5ce7);border-radius:2px;"></div>' : ''}
+            
             <div class="history-header">
-              <span class="history-badge" ${badgeStyle}>第 ${record.index || (index + 1)} 次分析</span>
+              <span class="history-badge" ${badgeStyle}>
+                ${record.is_current ? '⭐ ' : ''}第 ${record.index || (index + 1)} 次分析
+              </span>
               <span class="history-time">${timeLabel}</span>
-              <span class="history-score">${score} 分</span>
+              <span class="history-score" style="background:${scoreColor}">${score} 分</span>
             </div>
-            <div class="history-content">
+            
+            <div class="history-content" style="border-left: 3px solid ${record.is_current ? '#3182ce' : '#e2e8f0'}; padding-left: 16px;">
               ${md(record.analysis || '无分析内容')}
             </div>
+            
+            ${record.is_current ? `
+            <div style="margin-top: 12px; padding: 8px 12px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe; font-size: 0.85rem; color: #1e40af;">
+              💡 <strong>当前生效的分析报告</strong> - 这是最新的分析结果，用于指导后续改进
+            </div>
+            ` : ''}
           </div>`;
       });
       
       historyHtml += `</div>`;
+      
+      // 添加时间线可视化
+      historyHtml += `
+        <div style="margin-top: 32px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <h4 style="color: #4a5568; margin-top: 0; margin-bottom: 16px;">📅 分析时间线</h4>
+          <div style="display: flex; align-items: center; overflow-x: auto; padding: 8px 0; gap: 8px;">
+            ${(res.history || []).map((record, index) => `
+              <div style="display: flex; flex-direction: column; align-items: center; min-width: 80px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: ${record.is_current ? '#3182ce' : '#a0aec0'}; margin-bottom: 8px;"></div>
+                <div style="font-size: 0.75rem; color: #718096; text-align: center;">第${record.index || (index + 1)}次</div>
+                <div style="font-size: 0.7rem; color: #a0aec0; text-align: center;">${record.score || 0}分</div>
+              </div>
+              ${index < res.history.length - 1 ? '<div style="width: 20px; height: 2px; background: #e2e8f0;"></div>' : ''}
+            `).join('')}
+          </div>
+        </div>`;
     }
     
     detailEl.innerHTML = historyHtml;
+    S("分析历史加载完成");
+    
   } catch (error) {
+    console.error("❌ 历史记录错误:", error);
     S("获取历史记录失败: " + error.message);
-    console.error("历史记录错误:", error);
+    
+    // 显示错误界面
+    const detailEl = document.getElementById("detail");
+    detailEl.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px;">
+        <div style="font-size: 48px; color: #f56565; margin-bottom: 16px;">❌</div>
+        <h3 style="color: #c53030;">加载历史记录失败</h3>
+        <p style="color: #718096; margin-bottom: 24px;">${error.message || '未知错误'}</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="small" onclick="showPlan(${id})">返回方案详情</button>
+          <button class="small" onclick="showHistory(${id})">重试</button>
+        </div>
+      </div>`;
   }
 }
 
