@@ -7,6 +7,7 @@ import os
 import re
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 from flask import Flask, jsonify, request
@@ -25,6 +26,7 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 GITHUB_REPO = os.getenv("GITHUB_REPO", "caimingye78/physicsexperiment")
 GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
 GITHUB_SAVE_PATH = os.getenv("GITHUB_SAVE_PATH", "ai-saved-plans")
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def init_db():
@@ -63,6 +65,84 @@ def init_db():
             cur.execute("UPDATE plans SET versions=? WHERE id=?", (initial_versions, pid))
     con.commit()
     con.close()
+    import_saved_plans_if_empty()
+
+
+def split_markdown_section(text, heading):
+    marker = f"## {heading}"
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    start = text.find("\n", start)
+    if start < 0:
+        return ""
+    next_heading = text.find("\n## ", start + 1)
+    if next_heading < 0:
+        next_heading = len(text)
+    return text[start:next_heading].strip()
+
+
+def parse_saved_plan_markdown(text):
+    title_match = re.search(r"^#\s+(.+?)\s*$", text, re.M)
+    topic = title_match.group(1).strip() if title_match else "未命名方案"
+    version_match = re.search(r"^- 版本：(\d+)\s*$", text, re.M)
+    score_match = re.search(r"^- 创新性评分：(\d+)\s*$", text, re.M)
+    plan = split_markdown_section(text, "AI 生成方案")
+    analysis = split_markdown_section(text, "AI 分析报告")
+
+    improved = ""
+    improved_match = re.search(r"\n## 改进版方案[^\n]*\n", text)
+    if improved_match:
+        start = improved_match.end()
+        next_heading = text.find("\n## ", start)
+        if next_heading < 0:
+            next_heading = len(text)
+        improved = text[start:next_heading].strip()
+
+    version = int(version_match.group(1)) if version_match else (1 if improved else 0)
+    score = int(score_match.group(1)) if score_match else extract_score(analysis)
+    versions = [{"v": 0, "type": "初始方案", "content": plan}]
+    if improved:
+        versions.append({"v": version, "type": f"改进v{version}", "content": improved})
+
+    return {
+        "topic": topic,
+        "plan": plan,
+        "analysis": analysis,
+        "improved": improved,
+        "version": version,
+        "score": score,
+        "versions": json.dumps(versions, ensure_ascii=False),
+    }
+
+
+def import_saved_plans_if_empty():
+    saved_dir = REPO_ROOT / GITHUB_SAVE_PATH
+    if not saved_dir.exists():
+        return
+
+    count = db("SELECT COUNT(*) c FROM plans", one=True)
+    if count and count["c"] > 0:
+        return
+
+    for path in sorted(saved_dir.glob("*.md")):
+        try:
+            item = parse_saved_plan_markdown(path.read_text(encoding="utf-8"))
+            db(
+                "INSERT INTO plans(topic, plan, analysis, improved, version, score, versions) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (
+                    item["topic"],
+                    item["plan"],
+                    item["analysis"],
+                    item["improved"],
+                    item["version"],
+                    item["score"],
+                    item["versions"],
+                ),
+            )
+        except Exception as exc:
+            print(f"导入历史方案失败：{path}: {exc}")
 
 
 def db(sql, args=(), one=False):
@@ -292,6 +372,7 @@ def improve(pid):
 
 @app.route("/api/list")
 def list_plans():
+    import_saved_plans_if_empty()
     rows = db(
         "SELECT id,topic,version,score,created,(analysis!='') a,(improved!='') i "
         "FROM plans ORDER BY id DESC"
